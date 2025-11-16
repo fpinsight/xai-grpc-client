@@ -61,13 +61,13 @@ reviews:
         - Check for security issues in workflow files
         - Ensure proper caching strategies
 
-  # Ignore patterns - don't review these files
-  ignore:
-    - "target/**"
-    - "**/*.lock"
-    - "src/generated/**"
-    - ".idea/**"
-    - "*.md"
+  # Path filters for git sparse-checkout - exclude patterns with !
+  path_filters:
+    - "!target/**"
+    - "!**/*.lock"
+    - "!src/generated/**"
+    - "!.idea/**"
+    - "!*.md"
 
 # Tone and style
 tone_instructions: |
