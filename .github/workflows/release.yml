@@ -36,7 +36,7 @@ jobs:
         run: cargo test --lib --all-features
 
       - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+        run: cargo publish --allow-dirty --token ${{ secrets.CARGO_TOKEN }}
 
   create-release:
     name: Create GitHub Release

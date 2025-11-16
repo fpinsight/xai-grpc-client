@@ -12,6 +12,15 @@ keywords = ["xai", "grok", "grpc", "llm", "ai"]
 categories = ["api-bindings", "asynchronous", "network-programming"]
 readme = "README.md"
 rust-version = "1.82.0"
+include = [
+    "src/**/*",
+    "proto/**/*",
+    "build.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
 
 [workspace]
 # This is a standalone crate, not part of the parent workspace
