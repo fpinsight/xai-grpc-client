@@ -1,0 +1,553 @@
+use serde_json::Value as JsonValue;
+use crate::tools::{Tool, ToolChoice};
+
+/// Configuration options for chat completions
+/// Used by the LLMProvider trait to configure requests
+#[derive(Default, Clone, Debug)]
+pub struct CompletionOptions {
+    pub model: Option<String>,
+    pub temperature: Option<f32>,
+    pub max_tokens: Option<u32>,
+    pub top_p: Option<f32>,
+    pub frequency_penalty: Option<f32>,
+    pub presence_penalty: Option<f32>,
+    pub stop_sequences: Vec<String>,
+    pub tools: Option<Vec<Tool>>,
+    pub tool_choice: Option<ToolChoice>,
+    pub response_format: Option<ResponseFormat>,
+}
+
+impl CompletionOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_model(mut self, model: impl Into<String>) -> Self {
+        self.model = Some(model.into());
+        self
+    }
+
+    pub fn with_temperature(mut self, temp: f32) -> Self {
+        self.temperature = Some(temp);
+        self
+    }
+
+    pub fn with_max_tokens(mut self, tokens: u32) -> Self {
+        self.max_tokens = Some(tokens);
+        self
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct ChatRequest {
+    messages: Vec<Message>,
+    model: Option<String>,
+    max_tokens: Option<u32>,
+    temperature: Option<f32>,
+    top_p: Option<f32>,
+    stop: Vec<String>,
+    reasoning_effort: Option<ReasoningEffort>,
+    search: Option<SearchConfig>,
+    seed: Option<i32>,
+    response_format: Option<ResponseFormat>,
+    tools: Option<Vec<Tool>>,
+    tool_choice: Option<ToolChoice>,
+    // New fields
+    user: Option<String>,
+    logprobs: bool,
+    top_logprobs: Option<i32>,
+    frequency_penalty: Option<f32>,
+    presence_penalty: Option<f32>,
+    parallel_tool_calls: Option<bool>,
+    previous_response_id: Option<String>,
+    store_messages: bool,
+}
+
+#[derive(Clone, Debug)]
+pub enum Message {
+    System(String),
+    User(MessageContent),
+    Assistant(String),
+}
+
+#[derive(Clone, Debug)]
+pub enum MessageContent {
+    /// Plain text message
+    Text(String),
+    /// Multimodal message with text and/or images
+    MultiModal(Vec<ContentPart>),
+}
+
+#[derive(Clone, Debug)]
+pub enum ContentPart {
+    Text(String),
+    ImageUrl { url: String, detail: Option<ImageDetail> },
+}
+
+#[derive(Clone, Debug)]
+pub enum ImageDetail {
+    Auto,
+    Low,
+    High,
+}
+
+impl From<String> for MessageContent {
+    fn from(text: String) -> Self {
+        MessageContent::Text(text)
+    }
+}
+
+impl From<&str> for MessageContent {
+    fn from(text: &str) -> Self {
+        MessageContent::Text(text.to_string())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ReasoningEffort {
+    Low,
+    Medium,
+    High,
+}
+
+#[derive(Clone, Debug)]
+pub struct SearchConfig {
+    pub mode: SearchMode,
+    pub sources: Vec<SearchSource>,
+    pub max_results: Option<u32>,
+}
+
+#[derive(Clone, Debug)]
+pub enum SearchMode {
+    Off,
+    On,
+    Auto,
+}
+
+#[derive(Clone, Debug)]
+pub enum SearchSource {
+    Web,
+    X,
+    News,
+}
+
+#[derive(Clone, Debug)]
+pub enum ResponseFormat {
+    /// Plain text response (default)
+    Text,
+    /// Any valid JSON object
+    JsonObject,
+    /// Response must conform to provided JSON schema
+    JsonSchema(JsonValue),
+}
+
+impl ChatRequest {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn user_message(mut self, content: impl Into<MessageContent>) -> Self {
+        self.messages.push(Message::User(content.into()));
+        self
+    }
+
+    pub fn system_message(mut self, content: impl Into<String>) -> Self {
+        self.messages.push(Message::System(content.into()));
+        self
+    }
+
+    pub fn assistant_message(mut self, content: impl Into<String>) -> Self {
+        self.messages.push(Message::Assistant(content.into()));
+        self
+    }
+
+    pub fn user_multimodal(mut self, parts: Vec<ContentPart>) -> Self {
+        self.messages.push(Message::User(MessageContent::MultiModal(parts)));
+        self
+    }
+
+    pub fn user_with_image(mut self, text: impl Into<String>, image_url: impl Into<String>) -> Self {
+        self.messages.push(Message::User(MessageContent::MultiModal(vec![
+            ContentPart::Text(text.into()),
+            ContentPart::ImageUrl {
+                url: image_url.into(),
+                detail: None,
+            },
+        ])));
+        self
+    }
+
+    pub fn with_model(mut self, model: impl Into<String>) -> Self {
+        self.model = Some(model.into());
+        self
+    }
+
+    pub fn with_temperature(mut self, temp: f32) -> Self {
+        self.temperature = Some(temp.clamp(0.0, 2.0));
+        self
+    }
+
+    pub fn with_top_p(mut self, top_p: f32) -> Self {
+        self.top_p = Some(top_p.clamp(0.0, 1.0));
+        self
+    }
+
+    pub fn with_max_tokens(mut self, tokens: u32) -> Self {
+        self.max_tokens = Some(tokens);
+        self
+    }
+
+    pub fn with_reasoning_effort(mut self, effort: ReasoningEffort) -> Self {
+        self.reasoning_effort = Some(effort);
+        self
+    }
+
+    pub fn with_web_search(mut self) -> Self {
+        self.search = Some(SearchConfig {
+            mode: SearchMode::Auto,
+            sources: vec![SearchSource::Web],
+            max_results: Some(5),
+        });
+        self
+    }
+
+    pub fn with_json_output(mut self) -> Self {
+        self.response_format = Some(ResponseFormat::JsonObject);
+        self
+    }
+
+    pub fn with_json_schema(mut self, schema: JsonValue) -> Self {
+        self.response_format = Some(ResponseFormat::JsonSchema(schema));
+        self
+    }
+
+    // Deprecated alias for backwards compatibility
+    pub fn with_structured_output(self, schema: JsonValue) -> Self {
+        self.with_json_schema(schema)
+    }
+
+    pub fn with_seed(mut self, seed: i32) -> Self {
+        self.seed = Some(seed);
+        self
+    }
+
+    pub fn add_stop_sequence(mut self, seq: impl Into<String>) -> Self {
+        self.stop.push(seq.into());
+        self
+    }
+
+    pub fn with_tools(mut self, tools: Vec<Tool>) -> Self {
+        self.tools = Some(tools);
+        self
+    }
+
+    pub fn add_tool(mut self, tool: Tool) -> Self {
+        if let Some(ref mut tools) = self.tools {
+            tools.push(tool);
+        } else {
+            self.tools = Some(vec![tool]);
+        }
+        self
+    }
+
+    pub fn with_tool_choice(mut self, choice: ToolChoice) -> Self {
+        self.tool_choice = Some(choice);
+        self
+    }
+
+    pub fn with_user(mut self, user: impl Into<String>) -> Self {
+        self.user = Some(user.into());
+        self
+    }
+
+    pub fn with_logprobs(mut self, top_logprobs: Option<i32>) -> Self {
+        self.logprobs = true;
+        self.top_logprobs = top_logprobs;
+        self
+    }
+
+    pub fn with_frequency_penalty(mut self, penalty: f32) -> Self {
+        self.frequency_penalty = Some(penalty);
+        self
+    }
+
+    pub fn with_presence_penalty(mut self, penalty: f32) -> Self {
+        self.presence_penalty = Some(penalty);
+        self
+    }
+
+    pub fn with_parallel_tool_calls(mut self, enabled: bool) -> Self {
+        self.parallel_tool_calls = Some(enabled);
+        self
+    }
+
+    pub fn with_previous_response_id(mut self, id: impl Into<String>) -> Self {
+        self.previous_response_id = Some(id.into());
+        self
+    }
+
+    pub fn with_store_messages(mut self, store: bool) -> Self {
+        self.store_messages = store;
+        self
+    }
+
+    // Getters for conversion
+    pub fn messages(&self) -> &[Message] {
+        &self.messages
+    }
+
+    pub fn model(&self) -> Option<&str> {
+        self.model.as_deref()
+    }
+
+    pub fn max_tokens(&self) -> Option<u32> {
+        self.max_tokens
+    }
+
+    pub fn temperature(&self) -> Option<f32> {
+        self.temperature
+    }
+
+    pub fn top_p(&self) -> Option<f32> {
+        self.top_p
+    }
+
+    pub fn stop_sequences(&self) -> &[String] {
+        &self.stop
+    }
+
+    pub fn reasoning_effort(&self) -> Option<&ReasoningEffort> {
+        self.reasoning_effort.as_ref()
+    }
+
+    pub fn search_config(&self) -> Option<&SearchConfig> {
+        self.search.as_ref()
+    }
+
+    pub fn seed(&self) -> Option<i32> {
+        self.seed
+    }
+
+    pub fn response_format(&self) -> Option<&ResponseFormat> {
+        self.response_format.as_ref()
+    }
+
+    pub fn tools(&self) -> Option<&[Tool]> {
+        self.tools.as_deref()
+    }
+
+    pub fn tool_choice(&self) -> Option<&ToolChoice> {
+        self.tool_choice.as_ref()
+    }
+
+    pub fn user(&self) -> Option<&str> {
+        self.user.as_deref()
+    }
+
+    pub fn logprobs(&self) -> bool {
+        self.logprobs
+    }
+
+    pub fn top_logprobs(&self) -> Option<i32> {
+        self.top_logprobs
+    }
+
+    pub fn frequency_penalty(&self) -> Option<f32> {
+        self.frequency_penalty
+    }
+
+    pub fn presence_penalty(&self) -> Option<f32> {
+        self.presence_penalty
+    }
+
+    pub fn parallel_tool_calls(&self) -> Option<bool> {
+        self.parallel_tool_calls
+    }
+
+    pub fn previous_response_id(&self) -> Option<&str> {
+        self.previous_response_id.as_deref()
+    }
+
+    pub fn store_messages(&self) -> bool {
+        self.store_messages
+    }
+
+    /// Create a ChatRequest from a list of messages with optional configuration
+    pub fn from_messages(messages: Vec<Message>) -> Self {
+        Self {
+            messages,
+            ..Default::default()
+        }
+    }
+
+    /// Create a ChatRequest from messages and apply CompletionOptions
+    /// This is the primary method used by LLMProvider trait implementations
+    pub fn from_messages_with_options(messages: Vec<Message>, options: CompletionOptions) -> Self {
+        Self {
+            messages,
+            model: options.model,
+            temperature: options.temperature,
+            max_tokens: options.max_tokens,
+            top_p: options.top_p,
+            frequency_penalty: options.frequency_penalty,
+            presence_penalty: options.presence_penalty,
+            stop: options.stop_sequences,
+            tools: options.tools,
+            tool_choice: options.tool_choice,
+            response_format: options.response_format,
+            ..Default::default()
+        }
+    }
+}
+
+impl SearchConfig {
+    pub fn web() -> Self {
+        Self {
+            mode: SearchMode::Auto,
+            sources: vec![SearchSource::Web],
+            max_results: Some(5),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chat_request_builder() {
+        let request = ChatRequest::new()
+            .user_message("Hello, world!")
+            .with_model("grok-2")
+            .with_temperature(0.7)
+            .with_max_tokens(100);
+
+        assert_eq!(request.messages().len(), 1);
+        assert_eq!(request.model(), Some("grok-2"));
+        assert_eq!(request.temperature(), Some(0.7));
+        assert_eq!(request.max_tokens(), Some(100));
+    }
+
+    #[test]
+    fn test_multimodal_message() {
+        let request = ChatRequest::new()
+            .user_multimodal(vec![
+                ContentPart::Text("Describe this image".to_string()),
+                ContentPart::ImageUrl {
+                    url: "https://example.com/image.jpg".to_string(),
+                    detail: Some(ImageDetail::High),
+                },
+            ]);
+
+        assert_eq!(request.messages().len(), 1);
+        match &request.messages()[0] {
+            Message::User(MessageContent::MultiModal(parts)) => {
+                assert_eq!(parts.len(), 2);
+            }
+            _ => panic!("Expected multimodal user message"),
+        }
+    }
+
+    #[test]
+    fn test_from_messages() {
+        let messages = vec![
+            Message::System("You are a helpful assistant".to_string()),
+            Message::User(MessageContent::Text("Hello".to_string())),
+        ];
+
+        let request = ChatRequest::from_messages(messages);
+        assert_eq!(request.messages().len(), 2);
+    }
+
+    #[test]
+    fn test_from_messages_with_options() {
+        let messages = vec![Message::User(MessageContent::Text("Test".to_string()))];
+        let options = CompletionOptions::new()
+            .with_model("grok-2")
+            .with_temperature(0.8)
+            .with_max_tokens(200);
+
+        let request = ChatRequest::from_messages_with_options(messages, options);
+
+        assert_eq!(request.messages().len(), 1);
+        assert_eq!(request.model(), Some("grok-2"));
+        assert_eq!(request.temperature(), Some(0.8));
+        assert_eq!(request.max_tokens(), Some(200));
+    }
+
+    #[test]
+    fn test_sampling_parameters() {
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .with_frequency_penalty(0.5)
+            .with_presence_penalty(0.3)
+            .with_top_p(0.9);
+
+        assert_eq!(request.frequency_penalty(), Some(0.5));
+        assert_eq!(request.presence_penalty(), Some(0.3));
+        assert_eq!(request.top_p(), Some(0.9));
+    }
+
+    #[test]
+    fn test_stop_sequences() {
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .add_stop_sequence("STOP")
+            .add_stop_sequence("END");
+
+        assert_eq!(request.stop_sequences(), &["STOP", "END"]);
+    }
+
+    #[test]
+    fn test_logprobs() {
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .with_logprobs(Some(5));
+
+        assert_eq!(request.logprobs(), true);
+        assert_eq!(request.top_logprobs(), Some(5));
+    }
+
+    #[test]
+    fn test_stored_messages() {
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .with_store_messages(true)
+            .with_previous_response_id("resp_123");
+
+        assert_eq!(request.store_messages(), true);
+        assert_eq!(request.previous_response_id(), Some("resp_123"));
+    }
+
+    #[test]
+    fn test_search_config() {
+        let config = SearchConfig::web();
+        assert!(matches!(config.mode, SearchMode::Auto));
+        assert_eq!(config.sources.len(), 1);
+        assert_eq!(config.max_results, Some(5));
+    }
+
+    #[test]
+    fn test_reasoning_effort() {
+        let request = ChatRequest::new()
+            .user_message("Complex problem")
+            .with_reasoning_effort(ReasoningEffort::High);
+
+        assert!(matches!(
+            request.reasoning_effort(),
+            Some(ReasoningEffort::High)
+        ));
+    }
+
+    #[test]
+    fn test_json_output() {
+        let request = ChatRequest::new()
+            .user_message("Generate JSON")
+            .with_json_output();
+
+        assert!(matches!(
+            request.response_format(),
+            Some(ResponseFormat::JsonObject)
+        ));
+    }
+}
