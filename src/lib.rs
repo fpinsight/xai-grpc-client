@@ -123,6 +123,9 @@ pub mod response;
 /// Tool calling support (function calling, web search, etc.).
 pub mod tools;
 
+/// Model listing and information API.
+pub mod models;
+
 // Re-exports for convenient access
 pub use client::{GrokClient, GrokConfig};
 pub use error::{GrokError, Result};

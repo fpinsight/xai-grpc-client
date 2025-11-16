@@ -2,6 +2,7 @@ use crate::{
     auth::AuthInterceptor,
     error::{GrokError, Result},
     proto::chat_client::ChatClient,
+    proto::models_client::ModelsClient,
 };
 use secrecy::{ExposeSecret, SecretString};
 use std::time::Duration;
@@ -93,6 +94,8 @@ impl Default for GrokConfig {
 pub struct GrokClient {
     pub(super) inner:
         ChatClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) models_client:
+        ModelsClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
     pub(super) config: GrokConfig,
 }
 
@@ -188,9 +191,10 @@ impl GrokClient {
         let channel = endpoint.connect().await?;
 
         let interceptor = AuthInterceptor::new(config.api_key.clone());
-        let inner = ChatClient::with_interceptor(channel, interceptor);
+        let inner = ChatClient::with_interceptor(channel.clone(), interceptor.clone());
+        let models_client = ModelsClient::with_interceptor(channel, interceptor);
 
-        Ok(Self { inner, config })
+        Ok(Self { inner, models_client, config })
     }
 
     /// Tests the connection by sending a simple request to the API.

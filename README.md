@@ -16,9 +16,10 @@ Unofficial Rust client for [xAI's Grok API](https://docs.x.ai/) with full gRPC s
 - 🔧 **Tool calling** - Function calling with 7 tool types (function, web search, X search, MCP, etc.)
 - 🖼️ **Multimodal** - Text and image inputs for vision capabilities
 - 🧠 **Advanced features** - Log probabilities, reasoning traces, deferred completions
+- 📋 **Model discovery** - List available models with pricing and capabilities
 - 🔐 **Secure by default** - Uses `secrecy` crate to protect API keys in memory
 - ✅ **Comprehensive** - ~95% coverage of Grok API proto features
-- 🧪 **Well-tested** - 39 unit tests covering all core modules
+- 🧪 **Well-tested** - 51 unit tests covering all core modules
 
 ## Installation
 
@@ -189,6 +190,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  - {}", citation);
         }
     }
+
+    Ok(())
+}
+```
+
+### Model Listing
+
+List available models and get pricing information:
+
+```rust
+use xai_grpc_client::GrokClient;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut client = GrokClient::from_env().await?;
+
+    // List all available models
+    let models = client.list_models().await?;
+    for model in models {
+        println!("{}: {} (max {} tokens)",
+            model.name, model.version, model.max_prompt_length);
+
+        // Calculate cost for a request
+        let cost = model.calculate_cost(10000, 1000, 0);
+        println!("  Example cost: ${:.4}", cost);
+    }
+
+    // Get specific model details
+    let model = client.get_model("grok-2-1212").await?;
+    println!("Model: {} v{}", model.name, model.version);
 
     Ok(())
 }

@@ -141,4 +141,68 @@ impl GrokClient {
 
         Ok(())
     }
+
+    /// List all available language models
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let mut client = GrokClient::from_env().await?;
+    ///     let models = client.list_models().await?;
+    ///
+    ///     for model in models {
+    ///         println!("{}: {} (max {} tokens)",
+    ///             model.name, model.version, model.max_prompt_length);
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn list_models(&mut self) -> Result<Vec<crate::models::LanguageModel>> {
+        let response = self
+            .models_client
+            .list_language_models(())
+            .await?
+            .into_inner();
+
+        Ok(response
+            .models
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
+    /// Get detailed information about a specific model by name
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let mut client = GrokClient::from_env().await?;
+    ///     let model = client.get_model("grok-2-1212").await?;
+    ///
+    ///     println!("Model: {}", model.name);
+    ///     println!("Context length: {}", model.max_prompt_length);
+    ///     println!("Prompt price: ${:.4}/1M tokens",
+    ///         model.prompt_text_token_price as f64 / 100.0 / 1_000_000.0);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn get_model(&mut self, name: impl Into<String>) -> Result<crate::models::LanguageModel> {
+        let request = proto::GetModelRequest { name: name.into() };
+
+        let response = self
+            .models_client
+            .get_language_model(request)
+            .await?
+            .into_inner();
+
+        Ok(response.into())
+    }
 }
