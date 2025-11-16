@@ -1,32 +1,75 @@
+//! Error types for the xAI gRPC client.
+//!
+//! This module defines all errors that can occur when using the Grok API client,
+//! including network errors, authentication failures, rate limiting, and invalid requests.
+
 use thiserror::Error;
 
+/// Errors that can occur when using the Grok API client.
+///
+/// This enum covers all possible error conditions including transport failures,
+/// API errors, rate limiting, and configuration issues.
+///
+/// # Examples
+///
+/// ```no_run
+/// use xai_grpc_client::{GrokClient, GrokError};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let client = GrokClient::from_env().await;
+///
+/// match client {
+///     Ok(_) => println!("Connected successfully"),
+///     Err(GrokError::Auth(msg)) => println!("Authentication failed: {}", msg),
+///     Err(GrokError::RateLimit { retry_after_secs }) => {
+///         println!("Rate limited, retry after {} seconds", retry_after_secs)
+///     }
+///     Err(e) => println!("Error: {}", e),
+/// }
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Error, Debug)]
 pub enum GrokError {
+    /// gRPC transport layer error (network issues, connection failures).
     #[error("gRPC transport error: {0}")]
     Transport(#[from] tonic::transport::Error),
 
+    /// gRPC status error returned by the server.
     #[error("gRPC status error: {0}")]
     Status(#[from] tonic::Status),
 
+    /// Rate limit exceeded. The client should wait before retrying.
     #[error("Rate limit exceeded, retry after {retry_after_secs} seconds")]
-    RateLimit { retry_after_secs: u64 },
+    RateLimit {
+        /// Number of seconds to wait before retrying.
+        retry_after_secs: u64,
+    },
 
+    /// Authentication failed due to invalid or missing API key.
     #[error("Authentication failed: {0}")]
     Auth(String),
 
+    /// Invalid request parameters or malformed request.
     #[error("Invalid request: {0}")]
     InvalidRequest(String),
 
+    /// Configuration error (e.g., missing required settings).
     #[error("Configuration error: {0}")]
     Config(String),
 
+    /// Required environment variable not set.
     #[error("Environment variable not set: {0}")]
     EnvVar(#[from] std::env::VarError),
 
+    /// Invalid metadata/header value.
     #[error("Invalid header value: {0}")]
     InvalidHeaderValue(#[from] tonic::metadata::errors::InvalidMetadataValue),
 }
 
+/// Result type alias using [`GrokError`].
+///
+/// This is a convenience alias for `Result<T, GrokError>`.
 pub type Result<T> = std::result::Result<T, GrokError>;
 
 impl GrokError {
