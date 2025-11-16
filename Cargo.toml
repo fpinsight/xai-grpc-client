@@ -11,7 +11,7 @@ documentation = "https://docs.rs/xai-grpc-client"
 keywords = ["xai", "grok", "grpc", "llm", "ai"]
 categories = ["api-bindings", "asynchronous", "network-programming"]
 readme = "README.md"
-rust-version = "1.75.0"
+rust-version = "1.82.0"
 
 [workspace]
 # This is a standalone crate, not part of the parent workspace

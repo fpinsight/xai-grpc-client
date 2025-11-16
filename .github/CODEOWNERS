@@ -1,0 +1,32 @@
+# CODEOWNERS file for xai-grpc-client
+#
+# This file defines individuals or teams responsible for code in this repository.
+# When a pull request modifies code that has an owner, that owner will automatically
+# be requested for review.
+#
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+# This will be requested for review on all PRs unless a more specific rule applies below
+* @fpinsight/maintainers
+
+# Core library code
+/src/ @fpinsight/maintainers
+
+# API and protocol definitions
+/proto/ @fpinsight/maintainers
+
+# Build configuration
+/build.rs @fpinsight/maintainers
+/Cargo.toml @fpinsight/maintainers
+
+# CI/CD workflows
+/.github/ @fpinsight/maintainers
+
+# Documentation
+/README.md @fpinsight/maintainers
+/CHANGELOG.md @fpinsight/maintainers
+/docs/ @fpinsight/maintainers
+
+# Examples
+/examples/ @fpinsight/maintainers
