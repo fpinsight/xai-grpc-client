@@ -1,13 +1,36 @@
+//! Request types and builders for the Grok API.
+//!
+//! This module provides ergonomic builders for constructing chat completion requests
+//! with support for multimodal inputs, tool calling, advanced sampling parameters,
+//! and more.
+
 use crate::tools::{Tool, ToolChoice};
 use serde_json::Value as JsonValue;
 
-/// Configuration options for chat completions
-/// Used by the LLMProvider trait to configure requests
+/// Configuration options for chat completions.
+///
+/// Used to configure requests with model selection, sampling parameters,
+/// and tool calling settings. This type can be reused across multiple requests.
+///
+/// # Examples
+///
+/// ```
+/// use xai_grpc_client::CompletionOptions;
+///
+/// let options = CompletionOptions::new()
+///     .with_model("grok-2-1212")
+///     .with_temperature(0.7)
+///     .with_max_tokens(500);
+/// ```
 #[derive(Default, Clone, Debug)]
 pub struct CompletionOptions {
+    /// Model to use for completion.
     pub model: Option<String>,
+    /// Sampling temperature (0.0-2.0).
     pub temperature: Option<f32>,
+    /// Maximum tokens to generate.
     pub max_tokens: Option<u32>,
+    /// Nucleus sampling probability.
     pub top_p: Option<f32>,
     pub frequency_penalty: Option<f32>,
     pub presence_penalty: Option<f32>,
@@ -38,6 +61,22 @@ impl CompletionOptions {
     }
 }
 
+/// Builder for constructing chat completion requests.
+///
+/// Provides a fluent API for building requests with various options like
+/// model selection, sampling parameters, tool calling, multimodal inputs, and more.
+///
+/// # Examples
+///
+/// ```
+/// use xai_grpc_client::ChatRequest;
+///
+/// let request = ChatRequest::new()
+///     .user_message("What is the meaning of life?")
+///     .with_model("grok-2-1212")
+///     .with_max_tokens(100)
+///     .with_temperature(0.7);
+/// ```
 #[derive(Default, Clone, Debug)]
 pub struct ChatRequest {
     messages: Vec<Message>,
@@ -63,34 +102,50 @@ pub struct ChatRequest {
     store_messages: bool,
 }
 
+/// A message in a chat conversation.
+///
+/// Messages can be from the system (instructions), user (input), or assistant (AI response).
 #[derive(Clone, Debug)]
 pub enum Message {
+    /// System message providing instructions or context to the model.
     System(String),
+    /// User message containing the user's input (text or multimodal).
     User(MessageContent),
+    /// Assistant message containing the AI's previous response.
     Assistant(String),
 }
 
+/// Content of a user message, which can be text-only or multimodal.
 #[derive(Clone, Debug)]
 pub enum MessageContent {
-    /// Plain text message
+    /// Plain text message.
     Text(String),
-    /// Multimodal message with text and/or images
+    /// Multimodal message with text and/or images.
     MultiModal(Vec<ContentPart>),
 }
 
+/// A part of a multimodal message (text or image).
 #[derive(Clone, Debug)]
 pub enum ContentPart {
+    /// Text content.
     Text(String),
+    /// Image URL with optional detail level.
     ImageUrl {
+        /// URL of the image.
         url: String,
+        /// Level of detail for image processing.
         detail: Option<ImageDetail>,
     },
 }
 
+/// Level of detail for image processing in vision models.
 #[derive(Clone, Debug)]
 pub enum ImageDetail {
+    /// Automatic detail level.
     Auto,
+    /// Low detail (faster, cheaper).
     Low,
+    /// High detail (slower, more accurate).
     High,
 }
 
@@ -106,41 +161,63 @@ impl From<&str> for MessageContent {
     }
 }
 
+/// Level of reasoning effort for the model.
+///
+/// Higher reasoning effort may produce better results for complex tasks
+/// but will take longer and cost more tokens.
 #[derive(Clone, Debug)]
 pub enum ReasoningEffort {
+    /// Minimal reasoning effort.
     Low,
+    /// Moderate reasoning effort (balanced).
     Medium,
+    /// Maximum reasoning effort for complex tasks.
     High,
 }
 
+/// Configuration for web search augmentation.
+///
+/// Allows the model to search the web for up-to-date information.
 #[derive(Clone, Debug)]
 pub struct SearchConfig {
+    /// Search mode (default or advanced).
     pub mode: SearchMode,
+    /// Sources to search (web, news, etc.).
     pub sources: Vec<SearchSource>,
+    /// Maximum number of search results to return.
     pub max_results: Option<u32>,
 }
 
+/// Search mode for web search augmentation.
 #[derive(Clone, Debug)]
 pub enum SearchMode {
+    /// Search disabled.
     Off,
+    /// Search enabled.
     On,
+    /// Automatic search when needed.
     Auto,
 }
 
+/// Source for search results.
 #[derive(Clone, Debug)]
 pub enum SearchSource {
+    /// General web search.
     Web,
+    /// X (Twitter) search.
     X,
+    /// News articles.
     News,
 }
 
+/// Format for the model's response.
 #[derive(Clone, Debug)]
 pub enum ResponseFormat {
-    /// Plain text response (default)
+    /// Plain text response (default).
     Text,
-    /// Any valid JSON object
+    /// Any valid JSON object.
     JsonObject,
-    /// Response must conform to provided JSON schema
+    /// Response must conform to provided JSON schema.
     JsonSchema(JsonValue),
 }
 

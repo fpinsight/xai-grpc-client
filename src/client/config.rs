@@ -7,11 +7,37 @@ use secrecy::{ExposeSecret, SecretString};
 use std::time::Duration;
 use tonic::transport::{Channel, Endpoint};
 
+/// Configuration for the Grok API client.
+///
+/// This struct contains all the settings needed to connect to the xAI Grok API,
+/// including the endpoint URL, API key, default model, and timeout settings.
+///
+/// # Examples
+///
+/// ```no_run
+/// use xai_grpc_client::GrokConfig;
+/// use secrecy::SecretString;
+/// use std::time::Duration;
+///
+/// let config = GrokConfig {
+///     endpoint: "https://api.x.ai".to_string(),
+///     api_key: SecretString::from("your-api-key".to_string()),
+///     default_model: "grok-2-1212".to_string(),
+///     timeout: Duration::from_secs(120),
+/// };
+/// ```
 #[derive(Clone)]
 pub struct GrokConfig {
+    /// The gRPC endpoint URL (default: <https://api.x.ai>).
     pub endpoint: String,
+
+    /// API key for authentication (stored securely using SecretString).
     pub api_key: SecretString,
+
+    /// Default model to use for requests (default: "grok-code-fast-1").
     pub default_model: String,
+
+    /// Request timeout duration (default: 60 seconds).
     pub timeout: Duration,
 }
 
@@ -26,6 +52,44 @@ impl Default for GrokConfig {
     }
 }
 
+/// The main client for interacting with the xAI Grok API.
+///
+/// `GrokClient` provides methods for chat completions, streaming responses,
+/// deferred completions, and managing stored completions.
+///
+/// # Examples
+///
+/// ## Creating a client from environment
+///
+/// ```no_run
+/// use xai_grpc_client::GrokClient;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// // Reads XAI_API_KEY from environment
+/// let mut client = GrokClient::from_env().await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// ## Creating a client with custom configuration
+///
+/// ```no_run
+/// use xai_grpc_client::{GrokClient, GrokConfig};
+/// use secrecy::SecretString;
+/// use std::time::Duration;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = GrokConfig {
+///     endpoint: "https://api.x.ai".to_string(),
+///     api_key: SecretString::from("your-api-key".to_string()),
+///     default_model: "grok-2-1212".to_string(),
+///     timeout: Duration::from_secs(120),
+/// };
+///
+/// let mut client = GrokClient::new(config).await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct GrokClient {
     pub(super) inner:
         ChatClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
@@ -33,7 +97,32 @@ pub struct GrokClient {
 }
 
 impl GrokClient {
-    /// Create client from XAI_API_KEY environment variable
+    /// Creates a client using the `XAI_API_KEY` environment variable.
+    ///
+    /// This is the simplest way to create a client. It uses default settings
+    /// for endpoint, model, and timeout.
+    ///
+    /// # Environment Variables
+    ///
+    /// - `XAI_API_KEY` - Your xAI API key (required)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - `XAI_API_KEY` environment variable is not set
+    /// - The API key is invalid
+    /// - Connection to the API fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut client = GrokClient::from_env().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn from_env() -> Result<Self> {
         let api_key = std::env::var("XAI_API_KEY")?;
 
@@ -45,7 +134,42 @@ impl GrokClient {
         Self::new(config).await
     }
 
-    /// Create client with explicit configuration
+    /// Creates a client with custom configuration.
+    ///
+    /// Use this method when you need to customize the endpoint, model,
+    /// timeout, or provide the API key programmatically.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Configuration for the client
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - API key is empty
+    /// - Endpoint URL is invalid
+    /// - Connection to the API fails
+    /// - TLS configuration fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::{GrokClient, GrokConfig};
+    /// use secrecy::SecretString;
+    /// use std::time::Duration;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = GrokConfig {
+    ///     endpoint: "https://api.x.ai".to_string(),
+    ///     api_key: SecretString::from("your-api-key".to_string()),
+    ///     default_model: "grok-2-1212".to_string(),
+    ///     timeout: Duration::from_secs(120),
+    /// };
+    ///
+    /// let mut client = GrokClient::new(config).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn new(config: GrokConfig) -> Result<Self> {
         if config.api_key.expose_secret().is_empty() {
             return Err(GrokError::Config("API key is empty".to_string()));
@@ -69,7 +193,31 @@ impl GrokClient {
         Ok(Self { inner, config })
     }
 
-    /// Simple test method - sends "Hello" and returns response
+    /// Tests the connection by sending a simple request to the API.
+    ///
+    /// This method verifies that the client is properly configured and can
+    /// communicate with the xAI API. It sends a simple "Hello" message and
+    /// returns the response.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Connection to the API fails
+    /// - Authentication fails
+    /// - The API returns an error
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut client = GrokClient::from_env().await?;
+    /// let response = client.test_connection().await?;
+    /// println!("Connection test: {}", response);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn test_connection(&mut self) -> Result<String> {
         use crate::proto::{content, Content, GetCompletionsRequest, Message, MessageRole};
 

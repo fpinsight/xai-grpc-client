@@ -1,67 +1,111 @@
+//! Response types for chat completions.
+//!
+//! This module contains types for both streaming and non-streaming responses,
+//! including token usage, finish reasons, log probabilities, and tool calls.
+
 use crate::tools::ToolCall;
 
+/// Response from a chat completion request.
+///
+/// Contains the generated content, metadata, token usage, and optional extras
+/// like tool calls, citations, and reasoning traces.
 #[derive(Clone, Debug)]
 pub struct ChatResponse {
+    /// Unique request identifier.
     pub request_id: String,
+    /// Generated text content.
     pub content: String,
+    /// Reason why generation stopped.
     pub finish_reason: FinishReason,
+    /// Model that generated the response.
     pub model: String,
+    /// Token usage statistics.
     pub usage: TokenUsage,
+    /// Web search citations (if search was enabled).
     pub citations: Vec<String>,
+    /// Tool calls made by the model (if tools were provided).
     pub tool_calls: Vec<ToolCall>,
-    /// Reasoning trace the model produced before the final answer
+    /// Reasoning trace the model produced before the final answer.
     pub reasoning_content: Option<String>,
-    /// Log probabilities for the generated tokens (if requested)
+    /// Log probabilities for the generated tokens (if requested).
     pub logprobs: Option<LogProbs>,
-    /// Timestamp when response was created
+    /// Timestamp when response was created.
     pub created: Option<i64>,
-    /// Backend configuration fingerprint
+    /// Backend configuration fingerprint.
     pub system_fingerprint: Option<String>,
 }
 
+/// Log probabilities for all tokens in a response.
 #[derive(Clone, Debug)]
 pub struct LogProbs {
+    /// Log probability information for each token.
     pub content: Vec<LogProb>,
 }
 
+/// Log probability information for a single token.
 #[derive(Clone, Debug)]
 pub struct LogProb {
+    /// The token string.
     pub token: String,
+    /// Log probability of this token.
     pub logprob: f32,
+    /// UTF-8 bytes of the token.
     pub bytes: Vec<u8>,
+    /// Top alternative tokens at this position.
     pub top_logprobs: Vec<TopLogProb>,
 }
 
+/// Alternative token with its log probability.
 #[derive(Clone, Debug)]
 pub struct TopLogProb {
+    /// The alternative token string.
     pub token: String,
+    /// Log probability of this alternative.
     pub logprob: f32,
+    /// UTF-8 bytes of the token.
     pub bytes: Vec<u8>,
 }
 
+/// A chunk of a streaming chat response.
+///
+/// Contains incremental content as it's generated in real-time.
 #[derive(Clone, Debug)]
 pub struct ChatChunk {
+    /// Incremental content delta (new text generated).
     pub delta: String,
+    /// Finish reason if this is the last chunk.
     pub finish_reason: Option<FinishReason>,
+    /// Cumulative token usage so far.
     pub cumulative_usage: TokenUsage,
-    /// Reasoning trace delta (for streaming)
+    /// Reasoning trace delta (for streaming).
     pub reasoning_delta: Option<String>,
 }
 
+/// Token usage statistics for a completion.
 #[derive(Clone, Debug, Default)]
 pub struct TokenUsage {
+    /// Number of tokens in the prompt.
     pub prompt_tokens: u32,
+    /// Number of tokens generated in the completion.
     pub completion_tokens: u32,
+    /// Total tokens used (prompt + completion).
     pub total_tokens: u32,
 }
 
+/// Reason why the model stopped generating.
 #[derive(Clone, Debug)]
 pub enum FinishReason {
+    /// Model reached a natural stopping point.
     Stop,
+    /// Maximum token limit reached.
     Length,
+    /// Model wants to call a tool/function.
     ToolCalls,
+    /// Content was filtered by safety systems.
     ContentFilter,
+    /// An error occurred during generation.
     Error(String),
+    /// Unknown or unspecified reason.
     Unknown,
 }
 

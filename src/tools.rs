@@ -1,7 +1,18 @@
-//! Tool calling support for Grok API
+//! Tool calling support for Grok API.
 //!
 //! This module provides ergonomic Rust types for working with Grok's tool calling capabilities,
 //! including function calling, web search, X search, code execution, and more.
+//!
+//! # Tool Types
+//!
+//! The Grok API supports 7 different tool types:
+//! - **Function** - Client-side function calling (similar to OpenAI)
+//! - **WebSearch** - Server-side web search with domain filtering
+//! - **XSearch** - Search X (Twitter) posts with engagement filters
+//! - **CodeExecution** - Server-side Python code execution
+//! - **CollectionsSearch** - Search custom data collections
+//! - **MCP** - Model Context Protocol integration
+//! - **DocumentSearch** - Document retrieval from knowledge bases
 
 use serde_json::Value;
 use std::collections::HashMap;
@@ -15,22 +26,46 @@ use crate::proto::{
     XSearch as ProtoXSearch,
 };
 
-/// Ergonomic wrapper for tool definitions
+/// Tool that can be provided to the model for enhanced capabilities.
+///
+/// Tools allow the model to perform actions beyond text generation, such as
+/// calling functions, searching the web, or executing code.
+///
+/// # Examples
+///
+/// ```
+/// use xai_grpc_client::{Tool, FunctionTool, WebSearchTool};
+/// use serde_json::json;
+///
+/// // Function calling
+/// let weather_tool = Tool::Function(FunctionTool::new(
+///     "get_weather",
+///     "Get current weather"
+/// ).with_parameters(json!({
+///     "type": "object",
+///     "properties": {
+///         "location": {"type": "string"}
+///     }
+/// })));
+///
+/// // Web search
+/// let search_tool = Tool::WebSearch(WebSearchTool::new());
+/// ```
 #[derive(Clone, Debug)]
 pub enum Tool {
-    /// Client-side function calling (like OpenAI)
+    /// Client-side function calling (like OpenAI).
     Function(FunctionTool),
-    /// Server-side web search with domain filters
+    /// Server-side web search with domain filters.
     WebSearch(WebSearchTool),
-    /// Search X posts with engagement thresholds
+    /// Search X (Twitter) posts with engagement thresholds.
     XSearch(XSearchTool),
-    /// Server-side code execution
+    /// Server-side Python code execution.
     CodeExecution,
-    /// Search custom data collections
+    /// Search custom data collections.
     CollectionsSearch(CollectionsSearchTool),
-    /// Model Context Protocol integration
+    /// Model Context Protocol integration.
     Mcp(McpTool),
-    /// Document retrieval
+    /// Document retrieval from knowledge bases.
     DocumentSearch(DocumentSearchTool),
 }
 
@@ -328,14 +363,17 @@ impl DocumentSearchTool {
     }
 }
 
-/// Tool choice configuration - controls which tools the model can use
+/// Strategy for how the model should use tools.
+///
+/// Controls whether the model can freely choose tools, must use a tool,
+/// or should call a specific function.
 #[derive(Clone, Debug)]
 pub enum ToolChoice {
-    /// Let the model decide whether to use tools
+    /// Let the model decide whether to use tools.
     Auto,
-    /// Require the model to use a tool
+    /// Require the model to use a tool.
     Required,
-    /// Force the model to call a specific function
+    /// Force the model to call a specific function.
     Function(String),
 }
 
@@ -356,18 +394,21 @@ impl ToolChoice {
     }
 }
 
-/// Tool call from the model (in responses)
+/// A tool call made by the model in a response.
+///
+/// Contains information about which tool was called, its status,
+/// and the function details including arguments.
 #[derive(Clone, Debug)]
 pub struct ToolCall {
-    /// Unique identifier for this tool call
+    /// Unique identifier for this tool call.
     pub id: String,
-    /// Type of tool call (client-side or server-side)
+    /// Type of tool call (client-side or server-side).
     pub call_type: ToolCallKind,
-    /// Status of the tool call
+    /// Status of the tool call execution.
     pub status: ToolCallStatusKind,
-    /// Error message if the call failed
+    /// Error message if the call failed.
     pub error_message: Option<String>,
-    /// The actual function call details
+    /// The actual function call details.
     pub function: FunctionCall,
 }
 

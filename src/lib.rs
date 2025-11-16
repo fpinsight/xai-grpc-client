@@ -102,14 +102,25 @@
 
 // Include generated protobuf code once at module level
 #[path = "generated/xai_api.rs"]
-#[allow(warnings)]
+#[allow(warnings, missing_docs)]
 pub(crate) mod proto;
 
+#[allow(missing_docs)]
 mod auth;
+
+/// Client implementation for connecting to the xAI Grok API.
 pub mod client;
+
+/// Error types for the client.
 mod error;
+
+/// Request types and builders for chat completions.
 pub mod request;
+
+/// Response types for chat completions.
 pub mod response;
+
+/// Tool calling support (function calling, web search, etc.).
 pub mod tools;
 
 // Re-exports for convenient access
