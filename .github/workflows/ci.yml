@@ -19,9 +19,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [stable, beta, 1.75.0]  # MSRV is 1.75.0
+        rust: [stable, beta, 1.82.0]  # MSRV is 1.82.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Install protobuf compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@master
@@ -59,21 +64,44 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Install protobuf compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
+      - name: Generate code from protobuf
+        run: cargo check
+
+      - name: Format code (will skip generated files)
+        run: cargo fmt --all
+
+      - name: Check for formatting differences
+        run: |
+          # Check if formatting changed any files (excluding generated code)
+          if git diff --name-only | grep -v 'src/generated/' | grep -q '.rs$'; then
+            echo "Formatting issues found in:"
+            git diff --name-only | grep -v 'src/generated/' | grep '.rs$'
+            git diff
+            exit 1
+          fi
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Install protobuf compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -105,7 +133,12 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Install protobuf compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -131,7 +164,18 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Install protobuf compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
 
       - name: Run cargo audit
         uses: rustsec/audit-check@v2

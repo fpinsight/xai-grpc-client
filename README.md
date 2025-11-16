@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/xai-grpc-client.svg)](https://crates.io/crates/xai-grpc-client)
 [![Documentation](https://docs.rs/xai-grpc-client/badge.svg)](https://docs.rs/xai-grpc-client)
 [![License](https://img.shields.io/crates/l/xai-grpc-client.svg)](https://github.com/fpinsight/xai-grpc-client#license)
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-blue.svg?maxAge=3600)](https://github.com/fpinsight/xai-grpc-client)
+[![Rust](https://img.shields.io/badge/rust-1.82%2B-blue.svg?maxAge=3600)](https://github.com/fpinsight/xai-grpc-client)
 
 Unofficial Rust client for [xAI's Grok API](https://docs.x.ai/) with full gRPC support.
 
