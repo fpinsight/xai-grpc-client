@@ -1,0 +1,80 @@
+# CodeRabbit configuration for xai-grpc-client
+# Optimized for Rust library development
+
+# Language settings
+language: en-US
+
+# Review settings
+reviews:
+  # Enable high-level summary of changes
+  high_level_summary: true
+
+  # Enable poem-style summary for creative overview
+  poem: false
+
+  # Review levels per file type
+  review_status: true
+
+  # Auto-review configuration
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Request changes for critical issues
+  request_changes_workflow: true
+
+  # Path-based instructions (must be under reviews)
+  path_instructions:
+    - path: "src/generated/**"
+      instructions: |
+        This is auto-generated code from protobuf definitions.
+        - Skip detailed review
+        - Only flag critical security issues
+        - Do not suggest style changes
+
+    - path: "src/**/*.rs"
+      instructions: |
+        Focus on:
+        - Rust safety and correctness (borrow checker issues, unsafe usage)
+        - Error handling patterns (proper Result usage, error propagation)
+        - API design and ergonomics
+        - Documentation completeness and accuracy
+        - Security issues (especially in gRPC/auth code)
+        - Performance concerns (unnecessary clones, allocations)
+        - Async/await correctness
+
+    - path: "examples/**/*.rs"
+      instructions: |
+        - Verify examples compile and demonstrate best practices
+        - Check that examples are simple and educational
+        - Ensure error handling is shown properly
+
+    - path: "Cargo.toml"
+      instructions: |
+        - Check for dependency version conflicts
+        - Verify MSRV compatibility
+        - Review feature flags for correctness
+
+    - path: ".github/workflows/**"
+      instructions: |
+        - Verify CI/CD pipeline correctness
+        - Check for security issues in workflow files
+        - Ensure proper caching strategies
+
+  # Path filters for git sparse-checkout - exclude patterns with !
+  path_filters:
+    - "!target/**"
+    - "!**/*.lock"
+    - "!src/generated/**"
+    - "!.idea/**"
+    - "!*.md"
+
+# Tone and style
+tone_instructions: "Be concise and actionable. Focus on correctness and safety over style. Provide reasoning and distinguish critical issues from suggestions."
+
+# Chat settings for interactions
+chat:
+  auto_reply: true
+
+# Early access features
+early_access: false
