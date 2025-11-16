@@ -70,12 +70,7 @@ reviews:
     - "!*.md"
 
 # Tone and style
-tone_instructions: |
-  - Be concise and actionable
-  - Focus on correctness and safety over style
-  - Provide reasoning for suggestions
-  - Reference Rust best practices when applicable
-  - Distinguish between critical issues vs. suggestions
+tone_instructions: "Be concise and actionable. Focus on correctness and safety over style. Provide reasoning and distinguish critical issues from suggestions."
 
 # Chat settings for interactions
 chat:
