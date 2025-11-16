@@ -1,0 +1,119 @@
+# CodeRabbit configuration for xai-grpc-client
+# Optimized for Rust library development
+
+# Language settings
+language: en-US
+
+# Review settings
+reviews:
+  # Enable high-level summary of changes
+  high_level_summary: true
+
+  # Enable poem-style summary for creative overview
+  poem: false
+
+  # Review levels per file type
+  review_status: true
+
+  # Auto-review configuration
+  auto_review:
+    enabled: true
+
+    # Don't auto-approve, always require human review
+    auto_approve: false
+
+    # Review all files by default
+    drafts: false
+
+  # Request changes for critical issues
+  request_changes_workflow: true
+
+# Path-based instructions
+path_instructions:
+  - path: "src/generated/**"
+    instructions: |
+      This is auto-generated code from protobuf definitions.
+      - Skip detailed review
+      - Only flag critical security issues
+      - Do not suggest style changes
+
+  - path: "src/**/*.rs"
+    instructions: |
+      Focus on:
+      - Rust safety and correctness (borrow checker issues, unsafe usage)
+      - Error handling patterns (proper Result usage, error propagation)
+      - API design and ergonomics
+      - Documentation completeness and accuracy
+      - Security issues (especially in gRPC/auth code)
+      - Performance concerns (unnecessary clones, allocations)
+      - Async/await correctness
+
+  - path: "examples/**/*.rs"
+    instructions: |
+      - Verify examples compile and demonstrate best practices
+      - Check that examples are simple and educational
+      - Ensure error handling is shown properly
+
+  - path: "Cargo.toml"
+    instructions: |
+      - Check for dependency version conflicts
+      - Verify MSRV compatibility
+      - Review feature flags for correctness
+
+  - path: ".github/workflows/**"
+    instructions: |
+      - Verify CI/CD pipeline correctness
+      - Check for security issues in workflow files
+      - Ensure proper caching strategies
+
+# Ignore patterns - don't review these files
+ignore:
+  - "target/**"
+  - "**/*.lock"
+  - "src/generated/**"
+  - ".idea/**"
+  - "*.md" # We handle documentation manually
+
+# Tone and style
+tone_instructions: |
+  - Be concise and actionable
+  - Focus on correctness and safety over style
+  - Provide reasoning for suggestions
+  - Reference Rust best practices when applicable
+  - Distinguish between critical issues vs. suggestions
+
+# Enable various checks
+checks:
+  # Security vulnerabilities
+  security: true
+
+  # Performance issues
+  performance: true
+
+  # Best practices
+  best_practices: true
+
+  # Code complexity
+  complexity: true
+
+  # Documentation quality
+  documentation: true
+
+# Chat settings for interactions
+chat:
+  # Allow asking CodeRabbit questions in PR comments
+  auto_reply: true
+
+# Early access features
+early_access: false
+
+# Knowledge base - teach CodeRabbit about your project
+knowledge_base:
+  learnings:
+    - "This is a Rust gRPC client library for xAI's Grok API"
+    - "We use tonic 0.14 for gRPC communication"
+    - "MSRV is Rust 1.82.0"
+    - "API keys are stored using secrecy crate (SecretString)"
+    - "The library supports 7 tool types: Function, WebSearch, XSearch, CodeExecution, CollectionsSearch, MCP, DocumentSearch"
+    - "Generated protobuf code in src/generated/ should not be manually modified"
+    - "We follow standard Rust conventions and use cargo fmt"
