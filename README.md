@@ -1,5 +1,6 @@
 # xai-grpc-client
 
+[![CI](https://github.com/fpinsight/xai-grpc-client/workflows/CI/badge.svg)](https://github.com/fpinsight/xai-grpc-client/actions)
 [![Crates.io](https://img.shields.io/crates/v/xai-grpc-client.svg)](https://crates.io/crates/xai-grpc-client)
 [![Documentation](https://docs.rs/xai-grpc-client/badge.svg)](https://docs.rs/xai-grpc-client)
 [![License](https://img.shields.io/crates/l/xai-grpc-client.svg)](https://github.com/fpinsight/xai-grpc-client#license)

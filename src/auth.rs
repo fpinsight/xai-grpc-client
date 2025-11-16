@@ -17,7 +17,7 @@ impl tonic::service::Interceptor for AuthInterceptor {
         let token = format!("Bearer {}", self.api_key.expose_secret());
         let metadata_value = token
             .parse()
-            .map_err(|e| Status::internal(format!("Invalid auth token: {}", e)))?;
+            .map_err(|e| Status::internal(format!("Invalid auth token: {e}")))?;
 
         request
             .metadata_mut()

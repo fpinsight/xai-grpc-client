@@ -1,5 +1,5 @@
-use xai_grpc_client::{GrokClient, ChatRequest};
 use tokio_stream::StreamExt;
+use xai_grpc_client::{ChatRequest, GrokClient};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

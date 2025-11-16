@@ -1,5 +1,5 @@
-use xai_grpc_client::{GrokClient, ChatRequest, FunctionTool, Tool, ToolChoice};
 use serde_json::json;
+use xai_grpc_client::{ChatRequest, FunctionTool, GrokClient, Tool, ToolChoice};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -7,25 +7,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = GrokClient::from_env().await?;
 
     // Define a function tool
-    let get_weather = FunctionTool::new(
-        "get_weather",
-        "Get the current weather in a location",
-    )
-    .with_parameters(json!({
-        "type": "object",
-        "properties": {
-            "location": {
-                "type": "string",
-                "description": "City name"
+    let get_weather = FunctionTool::new("get_weather", "Get the current weather in a location")
+        .with_parameters(json!({
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "City name"
+                },
+                "unit": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
             },
-            "unit": {
-                "type": "string",
-                "enum": ["celsius", "fahrenheit"],
-                "description": "Temperature unit"
-            }
-        },
-        "required": ["location"]
-    }));
+            "required": ["location"]
+        }));
 
     // Create request with tool
     let request = ChatRequest::new()

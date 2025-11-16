@@ -10,9 +10,9 @@ use std::collections::HashMap;
 use crate::proto::{
     self, CodeExecution as ProtoCodeExecution, CollectionsSearch as ProtoCollectionsSearch,
     DocumentSearch as ProtoDocumentSearch, Function as ProtoFunction,
-    FunctionCall as ProtoFunctionCall, Mcp as ProtoMcp, ToolCall as ProtoToolCall,
-    ToolCallStatus, ToolCallType, ToolChoice as ProtoToolChoice, ToolMode,
-    WebSearch as ProtoWebSearch, XSearch as ProtoXSearch,
+    FunctionCall as ProtoFunctionCall, Mcp as ProtoMcp, ToolCall as ProtoToolCall, ToolCallStatus,
+    ToolCallType, ToolChoice as ProtoToolChoice, ToolMode, WebSearch as ProtoWebSearch,
+    XSearch as ProtoXSearch,
 };
 
 /// Ergonomic wrapper for tool definitions
@@ -190,8 +190,8 @@ impl XSearchTool {
 
     fn to_proto(&self) -> ProtoXSearch {
         ProtoXSearch {
-            from_date: self.from_date.clone(),
-            to_date: self.to_date.clone(),
+            from_date: self.from_date,
+            to_date: self.to_date,
             allowed_x_handles: self.allowed_x_handles.clone(),
             excluded_x_handles: self.excluded_x_handles.clone(),
             enable_image_understanding: self.enable_image_understanding,
@@ -344,9 +344,7 @@ impl ToolChoice {
     pub fn to_proto(&self) -> ProtoToolChoice {
         let tool_choice = match self {
             ToolChoice::Auto => proto::tool_choice::ToolChoice::Mode(ToolMode::Auto as i32),
-            ToolChoice::Required => {
-                proto::tool_choice::ToolChoice::Mode(ToolMode::Required as i32)
-            }
+            ToolChoice::Required => proto::tool_choice::ToolChoice::Mode(ToolMode::Required as i32),
             ToolChoice::Function(name) => {
                 proto::tool_choice::ToolChoice::FunctionName(name.clone())
             }
@@ -530,8 +528,7 @@ mod tests {
             }
         });
 
-        let tool = FunctionTool::new("get_weather", "Get weather")
-            .with_parameters(params.clone());
+        let tool = FunctionTool::new("get_weather", "Get weather").with_parameters(params.clone());
 
         assert_eq!(tool.parameters, params);
     }
@@ -582,8 +579,7 @@ mod tests {
 
     #[test]
     fn test_mcp_tool() {
-        let tool = McpTool::new("https://example.com/mcp")
-            .with_label("My MCP Server");
+        let tool = McpTool::new("https://example.com/mcp").with_label("My MCP Server");
         assert_eq!(tool.server_url, "https://example.com/mcp");
         assert_eq!(tool.server_label, "My MCP Server");
     }

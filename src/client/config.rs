@@ -1,11 +1,11 @@
-use std::time::Duration;
-use secrecy::{ExposeSecret, SecretString};
-use tonic::transport::{Channel, Endpoint};
 use crate::{
     auth::AuthInterceptor,
-    error::{Result, GrokError},
+    error::{GrokError, Result},
     proto::chat_client::ChatClient,
 };
+use secrecy::{ExposeSecret, SecretString};
+use std::time::Duration;
+use tonic::transport::{Channel, Endpoint};
 
 #[derive(Clone)]
 pub struct GrokConfig {
@@ -27,7 +27,8 @@ impl Default for GrokConfig {
 }
 
 pub struct GrokClient {
-    pub(super) inner: ChatClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) inner:
+        ChatClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
     pub(super) config: GrokConfig,
 }
 
@@ -70,7 +71,7 @@ impl GrokClient {
 
     /// Simple test method - sends "Hello" and returns response
     pub async fn test_connection(&mut self) -> Result<String> {
-        use crate::proto::{MessageRole, Content, content, Message, GetCompletionsRequest};
+        use crate::proto::{content, Content, GetCompletionsRequest, Message, MessageRole};
 
         let request = GetCompletionsRequest {
             messages: vec![Message {
@@ -97,6 +98,8 @@ impl GrokClient {
             }
         }
 
-        Err(GrokError::InvalidRequest("No content in response".to_string()))
+        Err(GrokError::InvalidRequest(
+            "No content in response".to_string(),
+        ))
     }
 }

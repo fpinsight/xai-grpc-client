@@ -1,5 +1,5 @@
-use serde_json::Value as JsonValue;
 use crate::tools::{Tool, ToolChoice};
+use serde_json::Value as JsonValue;
 
 /// Configuration options for chat completions
 /// Used by the LLMProvider trait to configure requests
@@ -81,7 +81,10 @@ pub enum MessageContent {
 #[derive(Clone, Debug)]
 pub enum ContentPart {
     Text(String),
-    ImageUrl { url: String, detail: Option<ImageDetail> },
+    ImageUrl {
+        url: String,
+        detail: Option<ImageDetail>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -162,18 +165,24 @@ impl ChatRequest {
     }
 
     pub fn user_multimodal(mut self, parts: Vec<ContentPart>) -> Self {
-        self.messages.push(Message::User(MessageContent::MultiModal(parts)));
+        self.messages
+            .push(Message::User(MessageContent::MultiModal(parts)));
         self
     }
 
-    pub fn user_with_image(mut self, text: impl Into<String>, image_url: impl Into<String>) -> Self {
-        self.messages.push(Message::User(MessageContent::MultiModal(vec![
-            ContentPart::Text(text.into()),
-            ContentPart::ImageUrl {
-                url: image_url.into(),
-                detail: None,
-            },
-        ])));
+    pub fn user_with_image(
+        mut self,
+        text: impl Into<String>,
+        image_url: impl Into<String>,
+    ) -> Self {
+        self.messages
+            .push(Message::User(MessageContent::MultiModal(vec![
+                ContentPart::Text(text.into()),
+                ContentPart::ImageUrl {
+                    url: image_url.into(),
+                    detail: None,
+                },
+            ])));
         self
     }
 
@@ -430,14 +439,13 @@ mod tests {
 
     #[test]
     fn test_multimodal_message() {
-        let request = ChatRequest::new()
-            .user_multimodal(vec![
-                ContentPart::Text("Describe this image".to_string()),
-                ContentPart::ImageUrl {
-                    url: "https://example.com/image.jpg".to_string(),
-                    detail: Some(ImageDetail::High),
-                },
-            ]);
+        let request = ChatRequest::new().user_multimodal(vec![
+            ContentPart::Text("Describe this image".to_string()),
+            ContentPart::ImageUrl {
+                url: "https://example.com/image.jpg".to_string(),
+                detail: Some(ImageDetail::High),
+            },
+        ]);
 
         assert_eq!(request.messages().len(), 1);
         match &request.messages()[0] {
@@ -504,7 +512,7 @@ mod tests {
             .user_message("Test")
             .with_logprobs(Some(5));
 
-        assert_eq!(request.logprobs(), true);
+        assert!(request.logprobs());
         assert_eq!(request.top_logprobs(), Some(5));
     }
 
@@ -515,7 +523,7 @@ mod tests {
             .with_store_messages(true)
             .with_previous_response_id("resp_123");
 
-        assert_eq!(request.store_messages(), true);
+        assert!(request.store_messages());
         assert_eq!(request.previous_response_id(), Some("resp_123"));
     }
 

@@ -119,10 +119,12 @@ pub use request::{
     ChatRequest, CompletionOptions, ContentPart, ImageDetail, Message, MessageContent,
     ReasoningEffort, ResponseFormat, SearchConfig, SearchMode, SearchSource,
 };
-pub use response::{ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb};
+pub use response::{
+    ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb,
+};
 pub use tools::{
-    CollectionsSearchTool, DocumentSearchTool, FunctionCall, FunctionTool, McpTool, Tool,
-    ToolCall, ToolCallKind, ToolCallStatusKind, ToolChoice, WebSearchTool, XSearchTool,
+    CollectionsSearchTool, DocumentSearchTool, FunctionCall, FunctionTool, McpTool, Tool, ToolCall,
+    ToolCallKind, ToolCallStatusKind, ToolChoice, WebSearchTool, XSearchTool,
 };
 
 /// Prelude module for convenient imports

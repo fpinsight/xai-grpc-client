@@ -72,7 +72,7 @@ impl std::fmt::Display for FinishReason {
             Self::Length => write!(f, "length"),
             Self::ToolCalls => write!(f, "tool_calls"),
             Self::ContentFilter => write!(f, "content_filter"),
-            Self::Error(e) => write!(f, "error: {}", e),
+            Self::Error(e) => write!(f, "error: {e}"),
             Self::Unknown => write!(f, "unknown"),
         }
     }

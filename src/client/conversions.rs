@@ -1,11 +1,13 @@
+use super::config::GrokClient;
 use crate::{
-    error::{Result, GrokError},
+    error::{GrokError, Result},
     proto::{self, GetCompletionsRequest},
-    request::{ChatRequest, ContentPart, ImageDetail, Message, MessageContent, ReasoningEffort, SearchMode},
-    response::{ChatResponse, ChatChunk, FinishReason, TokenUsage, LogProbs, LogProb, TopLogProb},
+    request::{
+        ChatRequest, ContentPart, ImageDetail, Message, MessageContent, ReasoningEffort, SearchMode,
+    },
+    response::{ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb},
     tools::ToolCall,
 };
-use super::config::GrokClient;
 
 impl GrokClient {
     /// Convert ChatRequest to protobuf GetCompletionsRequest
@@ -70,9 +72,10 @@ impl GrokClient {
             let (format_type, schema) = match format {
                 ResponseFormat::Text => (proto::FormatType::Text as i32, None),
                 ResponseFormat::JsonObject => (proto::FormatType::JsonObject as i32, None),
-                ResponseFormat::JsonSchema(schema) => {
-                    (proto::FormatType::JsonSchema as i32, Some(schema.to_string()))
-                }
+                ResponseFormat::JsonSchema(schema) => (
+                    proto::FormatType::JsonSchema as i32,
+                    Some(schema.to_string()),
+                ),
             };
 
             proto_req.response_format = Some(proto::ResponseFormat {
@@ -213,16 +216,24 @@ impl GrokClient {
 
         // Parse logprobs if present (from output, not message)
         let logprobs = output.logprobs.as_ref().map(|lp| LogProbs {
-            content: lp.content.iter().map(|log_prob| LogProb {
-                token: log_prob.token.clone(),
-                logprob: log_prob.logprob,
-                bytes: log_prob.bytes.clone(),
-                top_logprobs: log_prob.top_logprobs.iter().map(|top| TopLogProb {
-                    token: top.token.clone(),
-                    logprob: top.logprob,
-                    bytes: top.bytes.clone(),
-                }).collect(),
-            }).collect(),
+            content: lp
+                .content
+                .iter()
+                .map(|log_prob| LogProb {
+                    token: log_prob.token.clone(),
+                    logprob: log_prob.logprob,
+                    bytes: log_prob.bytes.clone(),
+                    top_logprobs: log_prob
+                        .top_logprobs
+                        .iter()
+                        .map(|top| TopLogProb {
+                            token: top.token.clone(),
+                            logprob: top.logprob,
+                            bytes: top.bytes.clone(),
+                        })
+                        .collect(),
+                })
+                .collect(),
         });
 
         // Parse timestamp if present
@@ -291,9 +302,9 @@ impl GrokClient {
     pub(super) fn parse_finish_reason_static(reason: i32) -> FinishReason {
         // Map proto FinishReason enum to our FinishReason
         match reason {
-            3 => FinishReason::Stop,           // REASON_STOP
-            1 | 2 => FinishReason::Length,     // REASON_MAX_LEN or REASON_MAX_CONTEXT
-            4 => FinishReason::ToolCalls,      // REASON_TOOL_CALLS
+            3 => FinishReason::Stop,                                    // REASON_STOP
+            1 | 2 => FinishReason::Length, // REASON_MAX_LEN or REASON_MAX_CONTEXT
+            4 => FinishReason::ToolCalls,  // REASON_TOOL_CALLS
             5 => FinishReason::Error("Time limit reached".to_string()), // REASON_TIME_LIMIT
             _ => FinishReason::Unknown,
         }

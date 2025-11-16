@@ -1,12 +1,12 @@
-use std::pin::Pin;
-use tokio_stream::{Stream, StreamExt};
+use super::config::GrokClient;
 use crate::{
-    error::{Result, GrokError},
+    error::{GrokError, Result},
     proto,
     request::ChatRequest,
-    response::{ChatResponse, ChatChunk},
+    response::{ChatChunk, ChatResponse},
 };
-use super::config::GrokClient;
+use std::pin::Pin;
+use tokio_stream::{Stream, StreamExt};
 
 impl GrokClient {
     /// Blocking completion (for simple queries)
@@ -25,7 +25,8 @@ impl GrokClient {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<ChatChunk>> + Send>>> {
         let proto_request = self.to_proto_request(&request)?;
 
-        let response = self.inner
+        let response = self
+            .inner
             .get_completion_chunk(proto_request)
             .await?
             .into_inner();
@@ -33,7 +34,7 @@ impl GrokClient {
         let stream = response.map(|result| {
             result
                 .map_err(Into::into)
-                .and_then(|chunk| Self::proto_chunk_to_chunk(chunk))
+                .and_then(Self::proto_chunk_to_chunk)
         });
 
         Ok(Box::pin(stream))
@@ -136,9 +137,7 @@ impl GrokClient {
     pub async fn delete_stored_completion(&mut self, response_id: String) -> Result<()> {
         let proto_request = proto::DeleteStoredCompletionRequest { response_id };
 
-        self.inner
-            .delete_stored_completion(proto_request)
-            .await?;
+        self.inner.delete_stored_completion(proto_request).await?;
 
         Ok(())
     }
