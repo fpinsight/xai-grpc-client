@@ -205,4 +205,40 @@ impl GrokClient {
 
         Ok(response.into())
     }
+
+    /// Generate embeddings from text or images.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::{GrokClient, EmbedRequest};
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let mut client = GrokClient::from_env().await?;
+    ///
+    ///     let request = EmbedRequest::new("embed-large-v1")
+    ///         .add_text("Hello, world!")
+    ///         .add_text("How are you?");
+    ///
+    ///     let response = client.embed(request).await?;
+    ///
+    ///     for embedding in response.embeddings {
+    ///         println!("Embedding {} has {} dimensions",
+    ///             embedding.index, embedding.vector.len());
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn embed(&mut self, request: crate::embedding::EmbedRequest) -> Result<crate::embedding::EmbedResponse> {
+        let proto_request = self.embed_request_to_proto(&request);
+
+        let response = self
+            .embedder_client
+            .embed(proto_request)
+            .await?
+            .into_inner();
+
+        Self::proto_to_embed_response(response)
+    }
 }

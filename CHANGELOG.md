@@ -18,13 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Modality` enum for input/output modality types (Text, Image, Embedding)
   - `calculate_cost()` method for estimating request costs
   - `supports_multimodal()` method for checking vision capabilities
-- New example: `list_models` demonstrating model discovery and pricing calculation
-- 12 additional unit tests for models API (total: 51 tests)
+- Embedding API for generating vector representations
+  - `GrokClient::embed()` - Generate embeddings from text or images
+  - `embedding` module with request/response types:
+    - `EmbedRequest` builder for creating embedding requests
+    - `EmbedInput` enum supporting text and image inputs
+    - `EmbedResponse`, `Embedding`, `EmbeddingUsage` types
+    - `EmbedEncodingFormat` for Float or Base64 output
+    - Base64 embedding decoding support
+- New examples:
+  - `list_models` - Model discovery and pricing calculation
+  - `embeddings` - Text embedding with cosine similarity
+- 19 additional unit tests (12 models + 7 embeddings, total: 58 tests)
 
 ### Changed
-- Updated `build.rs` to compile both `chat.proto` and `models.proto`
+- Updated `build.rs` to compile `chat.proto`, `models.proto`, and `embed.proto`
 - Enhanced documentation with detailed pricing unit explanations
-- Updated README with models API feature and new test count
+- Updated README with models and embeddings features
+- Added `base64` dependency for embedding decoding
 
 ## [0.1.0] - 2024-11-16
 

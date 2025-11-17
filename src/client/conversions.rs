@@ -309,4 +309,104 @@ impl GrokClient {
             _ => FinishReason::Unknown,
         }
     }
+
+    /// Convert EmbedRequest to protobuf EmbedRequest
+    pub(super) fn embed_request_to_proto(
+        &self,
+        request: &crate::embedding::EmbedRequest,
+    ) -> proto::EmbedRequest {
+        use crate::embedding::{EmbedEncodingFormat, EmbedInput};
+
+        let input = request
+            .inputs
+            .iter()
+            .map(|input| match input {
+                EmbedInput::Text(text) => proto::EmbedInput {
+                    input: Some(proto::embed_input::Input::String(text.clone())),
+                },
+                EmbedInput::Image { url, detail } => proto::EmbedInput {
+                    input: Some(proto::embed_input::Input::ImageUrl(proto::ImageUrlContent {
+                        image_url: url.clone(),
+                        detail: match detail {
+                            ImageDetail::Auto => proto::ImageDetail::DetailAuto as i32,
+                            ImageDetail::Low => proto::ImageDetail::DetailLow as i32,
+                            ImageDetail::High => proto::ImageDetail::DetailHigh as i32,
+                        },
+                    })),
+                },
+            })
+            .collect();
+
+        proto::EmbedRequest {
+            input,
+            model: request.model.clone(),
+            encoding_format: match request.encoding_format {
+                EmbedEncodingFormat::Float => proto::EmbedEncodingFormat::FormatFloat as i32,
+                EmbedEncodingFormat::Base64 => proto::EmbedEncodingFormat::FormatBase64 as i32,
+            },
+            user: request.user.clone().unwrap_or_default(),
+        }
+    }
+
+    /// Convert protobuf EmbedResponse to EmbedResponse
+    pub(super) fn proto_to_embed_response(
+        response: proto::EmbedResponse,
+    ) -> Result<crate::embedding::EmbedResponse> {
+        let embeddings = response
+            .embeddings
+            .into_iter()
+            .map(|emb| {
+                // Extract the first feature vector from each embedding
+                let vector = emb
+                    .embeddings
+                    .first()
+                    .and_then(|fv| {
+                        if !fv.float_array.is_empty() {
+                            Some(fv.float_array.clone())
+                        } else if !fv.base64_array.is_empty() {
+                            // Decode base64 to floats
+                            Self::decode_base64_embedding(&fv.base64_array)
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or_default();
+
+                crate::embedding::Embedding {
+                    index: emb.index as usize,
+                    vector,
+                }
+            })
+            .collect();
+
+        Ok(crate::embedding::EmbedResponse {
+            id: response.id,
+            embeddings,
+            usage: response
+                .usage
+                .map(Into::into)
+                .unwrap_or_default(),
+            model: response.model,
+            system_fingerprint: response.system_fingerprint,
+        })
+    }
+
+    fn decode_base64_embedding(base64_str: &str) -> Option<Vec<f32>> {
+        let decoded = base64::Engine::decode(
+            &base64::engine::general_purpose::STANDARD,
+            base64_str,
+        )
+        .ok()?;
+
+        // Convert bytes to f32 array (assuming little-endian)
+        let floats: Vec<f32> = decoded
+            .chunks_exact(4)
+            .filter_map(|chunk| {
+                let bytes: [u8; 4] = chunk.try_into().ok()?;
+                Some(f32::from_le_bytes(bytes))
+            })
+            .collect();
+
+        Some(floats)
+    }
 }

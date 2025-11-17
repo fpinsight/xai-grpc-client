@@ -2,6 +2,7 @@ use crate::{
     auth::AuthInterceptor,
     error::{GrokError, Result},
     proto::chat_client::ChatClient,
+    proto::embedder_client::EmbedderClient,
     proto::models_client::ModelsClient,
 };
 use secrecy::{ExposeSecret, SecretString};
@@ -96,6 +97,8 @@ pub struct GrokClient {
         ChatClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
     pub(super) models_client:
         ModelsClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) embedder_client:
+        EmbedderClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
     pub(super) config: GrokConfig,
 }
 
@@ -192,9 +195,10 @@ impl GrokClient {
 
         let interceptor = AuthInterceptor::new(config.api_key.clone());
         let inner = ChatClient::with_interceptor(channel.clone(), interceptor.clone());
-        let models_client = ModelsClient::with_interceptor(channel, interceptor);
+        let models_client = ModelsClient::with_interceptor(channel.clone(), interceptor.clone());
+        let embedder_client = EmbedderClient::with_interceptor(channel, interceptor);
 
-        Ok(Self { inner, models_client, config })
+        Ok(Self { inner, models_client, embedder_client, config })
     }
 
     /// Tests the connection by sending a simple request to the API.

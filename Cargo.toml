@@ -47,6 +47,9 @@ serde_json = "1.0"
 # Security
 secrecy = "0.10"
 
+# Encoding
+base64 = "0.22"
+
 [build-dependencies]
 tonic-prost-build = "0.14"
 
@@ -73,6 +76,10 @@ path = "examples/multimodal.rs"
 [[example]]
 name = "list_models"
 path = "examples/list_models.rs"
+
+[[example]]
+name = "embeddings"
+path = "examples/embeddings.rs"
 
 [package.metadata.docs.rs]
 all-features = true

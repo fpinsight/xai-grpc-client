@@ -126,6 +126,9 @@ pub mod tools;
 /// Model listing and information API.
 pub mod models;
 
+/// Embedding API for vector representations.
+pub mod embedding;
+
 // Re-exports for convenient access
 pub use client::{GrokClient, GrokConfig};
 pub use error::{GrokError, Result};
@@ -139,6 +142,9 @@ pub use response::{
 pub use tools::{
     CollectionsSearchTool, DocumentSearchTool, FunctionCall, FunctionTool, McpTool, Tool, ToolCall,
     ToolCallKind, ToolCallStatusKind, ToolChoice, WebSearchTool, XSearchTool,
+};
+pub use embedding::{
+    EmbedEncodingFormat, EmbedInput, EmbedRequest, EmbedResponse, Embedding, EmbeddingUsage,
 };
 
 /// Prelude module for convenient imports
