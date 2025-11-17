@@ -129,6 +129,21 @@ pub mod models;
 /// Embedding API for vector representations.
 pub mod embedding;
 
+/// Tokenization API for counting tokens.
+pub mod tokenize;
+
+/// API key information and status.
+pub mod api_key;
+
+/// Sample API for raw text sampling.
+pub mod sample;
+
+/// Image generation API.
+pub mod image;
+
+/// Documents search API for RAG.
+pub mod documents;
+
 // Re-exports for convenient access
 pub use client::{GrokClient, GrokConfig};
 pub use error::{GrokError, Result};
@@ -146,6 +161,16 @@ pub use tools::{
 pub use embedding::{
     EmbedEncodingFormat, EmbedInput, EmbedRequest, EmbedResponse, Embedding, EmbeddingUsage,
 };
+pub use tokenize::{
+    Token, TokenizeRequest, TokenizeResponse,
+};
+pub use models::{
+    EmbeddingModel, ImageGenerationModel, LanguageModel, Modality,
+};
+pub use api_key::ApiKeyInfo;
+pub use sample::{SampleRequest, SampleResponse, SampleChoice};
+pub use image::{ImageGenerationRequest, ImageGenerationResponse, GeneratedImage, ImageFormat};
+pub use documents::{DocumentSearchRequest, DocumentSearchResponse, SearchMatch, RankingMetric};
 
 /// Prelude module for convenient imports
 pub mod prelude {

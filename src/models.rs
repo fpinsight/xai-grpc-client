@@ -177,6 +177,109 @@ pub enum Modality {
     Embedding,
 }
 
+/// Information about an embedding model.
+///
+/// Embedding models convert text or images into high-dimensional vector
+/// representations that can be used for semantic search, clustering, and
+/// similarity comparisons.
+///
+/// # Pricing Units
+///
+/// - `prompt_text_token_price`: 1/100 USD cents per 1M tokens
+/// - `prompt_image_token_price`: 1/100 USD cents per 1M tokens
+///
+/// # Examples
+///
+/// ```no_run
+/// # use xai_grpc_client::GrokClient;
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut client = GrokClient::from_env().await?;
+/// let model = client.get_embedding_model("embed-large-v1").await?;
+///
+/// println!("Model: {}", model.name);
+/// println!("Version: {}", model.version);
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone, Debug)]
+pub struct EmbeddingModel {
+    /// The model name used in API requests (e.g., "embed-large-v1").
+    pub name: String,
+
+    /// Alternative names that can be used for this model.
+    pub aliases: Vec<String>,
+
+    /// Version number of the model.
+    pub version: String,
+
+    /// Supported input modalities (typically Text and optionally Image).
+    pub input_modalities: Vec<Modality>,
+
+    /// Supported output modalities (always includes Embedding).
+    pub output_modalities: Vec<Modality>,
+
+    /// Price per million text prompt tokens in 1/100 USD cents.
+    pub prompt_text_token_price: i64,
+
+    /// Price per million image prompt tokens in 1/100 USD cents.
+    pub prompt_image_token_price: i64,
+
+    /// Backend configuration fingerprint.
+    pub system_fingerprint: String,
+}
+
+/// Information about an image generation model.
+///
+/// Image generation models create images from text prompts.
+///
+/// # Pricing Units
+///
+/// - `image_price`: USD cents per image
+///
+/// # Examples
+///
+/// ```no_run
+/// # use xai_grpc_client::GrokClient;
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut client = GrokClient::from_env().await?;
+/// let model = client.get_image_generation_model("image-gen-1").await?;
+///
+/// println!("Model: {}", model.name);
+/// println!("Cost per image: ${:.2}", model.image_price as f64 / 100.0);
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone, Debug)]
+pub struct ImageGenerationModel {
+    /// The model name used in API requests.
+    pub name: String,
+
+    /// Alternative names that can be used for this model.
+    pub aliases: Vec<String>,
+
+    /// Version number of the model.
+    pub version: String,
+
+    /// Supported input modalities (typically Text).
+    pub input_modalities: Vec<Modality>,
+
+    /// Supported output modalities (typically Image).
+    pub output_modalities: Vec<Modality>,
+
+    /// Price per image in USD cents.
+    ///
+    /// Example: 200 = $2.00 per image
+    pub image_price: i64,
+
+    /// Maximum length of the prompt/input in tokens.
+    pub max_prompt_length: i32,
+
+    /// Backend configuration fingerprint.
+    pub system_fingerprint: String,
+}
+
 impl From<proto::LanguageModel> for LanguageModel {
     fn from(proto: proto::LanguageModel) -> Self {
         Self {
@@ -284,6 +387,56 @@ impl LanguageModel {
     pub fn supports_multimodal(&self) -> bool {
         self.input_modalities.contains(&Modality::Text)
             && self.input_modalities.contains(&Modality::Image)
+    }
+}
+
+impl From<proto::EmbeddingModel> for EmbeddingModel {
+    fn from(proto: proto::EmbeddingModel) -> Self {
+        Self {
+            name: proto.name,
+            aliases: proto.aliases,
+            version: proto.version,
+            input_modalities: proto
+                .input_modalities
+                .into_iter()
+                .filter_map(|m| proto::Modality::try_from(m).ok())
+                .map(Modality::from)
+                .collect(),
+            output_modalities: proto
+                .output_modalities
+                .into_iter()
+                .filter_map(|m| proto::Modality::try_from(m).ok())
+                .map(Modality::from)
+                .collect(),
+            prompt_text_token_price: proto.prompt_text_token_price,
+            prompt_image_token_price: proto.prompt_image_token_price,
+            system_fingerprint: proto.system_fingerprint,
+        }
+    }
+}
+
+impl From<proto::ImageGenerationModel> for ImageGenerationModel {
+    fn from(proto: proto::ImageGenerationModel) -> Self {
+        Self {
+            name: proto.name,
+            aliases: proto.aliases,
+            version: proto.version,
+            input_modalities: proto
+                .input_modalities
+                .into_iter()
+                .filter_map(|m| proto::Modality::try_from(m).ok())
+                .map(Modality::from)
+                .collect(),
+            output_modalities: proto
+                .output_modalities
+                .into_iter()
+                .filter_map(|m| proto::Modality::try_from(m).ok())
+                .map(Modality::from)
+                .collect(),
+            image_price: proto.image_price,
+            max_prompt_length: proto.max_prompt_length,
+            system_fingerprint: proto.system_fingerprint,
+        }
     }
 }
 
