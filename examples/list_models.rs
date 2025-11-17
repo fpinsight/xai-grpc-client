@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if model.cached_prompt_token_price > 0 {
             println!(
                 "  Cached prompt: ${:.4}/100M tokens",
-                model.cached_prompt_token_price as f64
+                model.cached_prompt_token_price as f64 / 100.0
             );
         }
 

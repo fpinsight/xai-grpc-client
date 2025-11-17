@@ -8,6 +8,7 @@ use crate::{
     response::{ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb},
     tools::ToolCall,
 };
+use base64::Engine;
 
 impl GrokClient {
     /// Convert ChatRequest to protobuf GetCompletionsRequest
@@ -358,28 +359,28 @@ impl GrokClient {
             .embeddings
             .into_iter()
             .map(|emb| {
-                // Extract the first feature vector from each embedding
-                let vector = emb
-                    .embeddings
-                    .first()
-                    .and_then(|fv| {
-                        if !fv.float_array.is_empty() {
-                            Some(fv.float_array.clone())
-                        } else if !fv.base64_array.is_empty() {
-                            // Decode base64 to floats
-                            Self::decode_base64_embedding(&fv.base64_array)
-                        } else {
-                            None
-                        }
-                    })
-                    .unwrap_or_default();
+                // Take the first feature vector, failing if missing
+                let fv =
+                    emb.embeddings.into_iter().next().ok_or_else(|| {
+                        GrokError::InvalidRequest("missing embedding vector".into())
+                    })?;
 
-                crate::embedding::Embedding {
+                let vector = if !fv.float_array.is_empty() {
+                    fv.float_array
+                } else if !fv.base64_array.is_empty() {
+                    Self::decode_base64_embedding(&fv.base64_array)?
+                } else {
+                    return Err(GrokError::InvalidRequest(
+                        "embedding had neither float nor base64 array".into(),
+                    ));
+                };
+
+                Ok(crate::embedding::Embedding {
                     index: emb.index as usize,
                     vector,
-                }
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(crate::embedding::EmbedResponse {
             id: response.id,
@@ -390,19 +391,28 @@ impl GrokClient {
         })
     }
 
-    fn decode_base64_embedding(base64_str: &str) -> Option<Vec<f32>> {
-        let decoded =
-            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, base64_str).ok()?;
+    fn decode_base64_embedding(base64_str: &str) -> Result<Vec<f32>> {
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(base64_str)
+            .map_err(|e| GrokError::InvalidRequest(format!("invalid base64 embedding: {e}")))?;
 
-        // Convert bytes to f32 array (assuming little-endian)
+        if decoded.len() % 4 != 0 {
+            return Err(GrokError::InvalidRequest(
+                "embedding byte length not divisible by 4".into(),
+            ));
+        }
+
+        // Convert bytes to f32 array (little-endian)
         let floats: Vec<f32> = decoded
             .chunks_exact(4)
-            .filter_map(|chunk| {
-                let bytes: [u8; 4] = chunk.try_into().ok()?;
-                Some(f32::from_le_bytes(bytes))
+            .map(|chunk| {
+                let bytes: [u8; 4] = chunk
+                    .try_into()
+                    .expect("chunk size already validated as divisible by 4");
+                f32::from_le_bytes(bytes)
             })
             .collect();
 
-        Some(floats)
+        Ok(floats)
     }
 }
