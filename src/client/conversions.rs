@@ -325,14 +325,16 @@ impl GrokClient {
                     input: Some(proto::embed_input::Input::String(text.clone())),
                 },
                 EmbedInput::Image { url, detail } => proto::EmbedInput {
-                    input: Some(proto::embed_input::Input::ImageUrl(proto::ImageUrlContent {
-                        image_url: url.clone(),
-                        detail: match detail {
-                            ImageDetail::Auto => proto::ImageDetail::DetailAuto as i32,
-                            ImageDetail::Low => proto::ImageDetail::DetailLow as i32,
-                            ImageDetail::High => proto::ImageDetail::DetailHigh as i32,
+                    input: Some(proto::embed_input::Input::ImageUrl(
+                        proto::ImageUrlContent {
+                            image_url: url.clone(),
+                            detail: match detail {
+                                ImageDetail::Auto => proto::ImageDetail::DetailAuto as i32,
+                                ImageDetail::Low => proto::ImageDetail::DetailLow as i32,
+                                ImageDetail::High => proto::ImageDetail::DetailHigh as i32,
+                            },
                         },
-                    })),
+                    )),
                 },
             })
             .collect();
@@ -382,21 +384,15 @@ impl GrokClient {
         Ok(crate::embedding::EmbedResponse {
             id: response.id,
             embeddings,
-            usage: response
-                .usage
-                .map(Into::into)
-                .unwrap_or_default(),
+            usage: response.usage.map(Into::into).unwrap_or_default(),
             model: response.model,
             system_fingerprint: response.system_fingerprint,
         })
     }
 
     fn decode_base64_embedding(base64_str: &str) -> Option<Vec<f32>> {
-        let decoded = base64::Engine::decode(
-            &base64::engine::general_purpose::STANDARD,
-            base64_str,
-        )
-        .ok()?;
+        let decoded =
+            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, base64_str).ok()?;
 
         // Convert bytes to f32 array (assuming little-endian)
         let floats: Vec<f32> = decoded

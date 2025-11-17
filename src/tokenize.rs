@@ -197,8 +197,7 @@ mod tests {
 
     #[test]
     fn test_tokenize_request_without_user() {
-        let request = TokenizeRequest::new("grok-2-1212")
-            .with_text("Hello!");
+        let request = TokenizeRequest::new("grok-2-1212").with_text("Hello!");
 
         assert_eq!(request.model, "grok-2-1212");
         assert_eq!(request.text, "Hello!");

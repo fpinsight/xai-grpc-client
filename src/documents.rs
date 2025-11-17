@@ -126,7 +126,10 @@ mod tests {
         assert_eq!(request.collection_ids[1], "col-2");
         assert_eq!(request.limit, Some(20));
         assert_eq!(request.ranking_metric, RankingMetric::CosineSimilarity);
-        assert_eq!(request.instructions, Some("Focus on recent research".to_string()));
+        assert_eq!(
+            request.instructions,
+            Some("Focus on recent research".to_string())
+        );
     }
 
     #[test]
@@ -143,7 +146,10 @@ mod tests {
     #[test]
     fn test_ranking_metric() {
         assert_eq!(RankingMetric::L2Distance, RankingMetric::L2Distance);
-        assert_eq!(RankingMetric::CosineSimilarity, RankingMetric::CosineSimilarity);
+        assert_eq!(
+            RankingMetric::CosineSimilarity,
+            RankingMetric::CosineSimilarity
+        );
         assert_ne!(RankingMetric::L2Distance, RankingMetric::CosineSimilarity);
     }
 

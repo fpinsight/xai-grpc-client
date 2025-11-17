@@ -28,8 +28,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_client(true)
         .out_dir("src/generated")
         .compile_protos(
-            &[chat_proto, models_proto, embed_proto, tokenize_proto, auth_proto, sample_proto, image_proto, documents_proto],
-            &[proto_root]
+            &[
+                chat_proto,
+                models_proto,
+                embed_proto,
+                tokenize_proto,
+                auth_proto,
+                sample_proto,
+                image_proto,
+                documents_proto,
+            ],
+            &[proto_root],
         )?;
 
     Ok(())

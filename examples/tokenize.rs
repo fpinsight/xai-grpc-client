@@ -23,12 +23,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Example 1: Basic Tokenization ===\n");
 
     let text = "Hello, world! How are you today?";
-    let request = TokenizeRequest::new("grok-2-1212")
-        .with_text(text);
+    let request = TokenizeRequest::new("grok-2-1212").with_text(text);
 
     let response = client.tokenize(request).await?;
 
-    println!("Text: \"{}\"", text);
+    println!("Text: \"{text}\"");
     println!("Token count: {}", response.token_count());
     println!("\nTokens:");
     for (i, token) in response.tokens.iter().enumerate() {
@@ -39,12 +38,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n\n=== Example 2: Longer Text ===\n");
 
     let text = "The quick brown fox jumps over the lazy dog. This is a common English pangram used for testing.";
-    let request = TokenizeRequest::new("grok-2-1212")
-        .with_text(text);
+    let request = TokenizeRequest::new("grok-2-1212").with_text(text);
 
     let response = client.tokenize(request).await?;
 
-    println!("Text: \"{}\"", text);
+    println!("Text: \"{text}\"");
     println!("Token count: {}", response.token_count());
     println!("Reconstructed text: \"{}\"", response.text());
 
@@ -57,14 +55,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Tokenize a prompt
     let prompt = "Write a detailed analysis of the benefits of Rust programming language, covering safety, performance, and ecosystem.";
-    let request = TokenizeRequest::new("grok-2-1212")
-        .with_text(prompt);
+    let request = TokenizeRequest::new("grok-2-1212").with_text(prompt);
 
     let response = client.tokenize(request).await?;
     let prompt_tokens = response.token_count() as u32;
 
-    println!("\nPrompt: \"{}\"", prompt);
-    println!("Prompt tokens: {}", prompt_tokens);
+    println!("\nPrompt: \"{prompt}\"");
+    println!("Prompt tokens: {prompt_tokens}");
 
     // Estimate cost for different response lengths
     let completion_tokens_scenarios = vec![100, 500, 1000, 5000];
@@ -72,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nEstimated costs:");
     for completion_tokens in completion_tokens_scenarios {
         let cost = model.calculate_cost(prompt_tokens, completion_tokens, 0);
-        println!("  {} completion tokens: ${:.6}", completion_tokens, cost);
+        println!("  {completion_tokens} completion tokens: ${cost:.6}");
     }
 
     // Example 4: Multi-line text (code example)
@@ -84,13 +81,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let y = x * 2;
 }"#;
 
-    let request = TokenizeRequest::new("grok-2-1212")
-        .with_text(code);
+    let request = TokenizeRequest::new("grok-2-1212").with_text(code);
 
     let response = client.tokenize(request).await?;
 
     println!("Code snippet:");
-    println!("{}", code);
+    println!("{code}");
     println!("\nToken count: {}", response.token_count());
 
     // Example 5: Comparing different texts
@@ -104,11 +100,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
 
     for text in texts {
-        let request = TokenizeRequest::new("grok-2-1212")
-            .with_text(text);
+        let request = TokenizeRequest::new("grok-2-1212").with_text(text);
 
         let response = client.tokenize(request).await?;
-        println!("{:40} → {} tokens", format!("\"{}\"", text), response.token_count());
+        println!(
+            "{:40} → {} tokens",
+            format!("\"{}\"", text),
+            response.token_count()
+        );
     }
 
     // Example 6: Using with user identifier
@@ -119,7 +118,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_user("user-123");
 
     let response = client.tokenize(request).await?;
-    println!("Token count: {} (tracked for user-123)", response.token_count());
+    println!(
+        "Token count: {} (tracked for user-123)",
+        response.token_count()
+    );
 
     println!("\n✓ All examples completed successfully!");
 

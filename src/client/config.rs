@@ -211,14 +211,26 @@ impl GrokClient {
         let interceptor = AuthInterceptor::new(config.api_key.clone());
         let inner = ChatClient::with_interceptor(channel.clone(), interceptor.clone());
         let models_client = ModelsClient::with_interceptor(channel.clone(), interceptor.clone());
-        let embedder_client = EmbedderClient::with_interceptor(channel.clone(), interceptor.clone());
-        let tokenize_client = TokenizeClient::with_interceptor(channel.clone(), interceptor.clone());
+        let embedder_client =
+            EmbedderClient::with_interceptor(channel.clone(), interceptor.clone());
+        let tokenize_client =
+            TokenizeClient::with_interceptor(channel.clone(), interceptor.clone());
         let auth_client = AuthClient::with_interceptor(channel.clone(), interceptor.clone());
         let sample_client = SampleClient::with_interceptor(channel.clone(), interceptor.clone());
         let image_client = ImageClient::with_interceptor(channel.clone(), interceptor.clone());
         let documents_client = DocumentsClient::with_interceptor(channel, interceptor);
 
-        Ok(Self { inner, models_client, embedder_client, tokenize_client, auth_client, sample_client, image_client, documents_client, config })
+        Ok(Self {
+            inner,
+            models_client,
+            embedder_client,
+            tokenize_client,
+            auth_client,
+            sample_client,
+            image_client,
+            documents_client,
+            config,
+        })
     }
 
     /// Tests the connection by sending a simple request to the API.

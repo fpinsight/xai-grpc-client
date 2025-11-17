@@ -350,9 +350,8 @@ impl LanguageModel {
         completion_tokens: u32,
         cached_tokens: u32,
     ) -> f64 {
-        let prompt_cost = (prompt_tokens as f64 * self.prompt_text_token_price as f64)
-            / 1_000_000.0
-            / 100.0;
+        let prompt_cost =
+            (prompt_tokens as f64 * self.prompt_text_token_price as f64) / 1_000_000.0 / 100.0;
         let cached_cost =
             (cached_tokens as f64 * self.cached_prompt_token_price as f64) / 100_000_000.0;
         let completion_cost = (completion_tokens as f64 * self.completion_text_token_price as f64)
@@ -451,9 +450,9 @@ mod tests {
             version: "1.0".to_string(),
             input_modalities: vec![Modality::Text],
             output_modalities: vec![Modality::Text],
-            prompt_text_token_price: 500,  // $0.005 per 1M tokens
+            prompt_text_token_price: 500, // $0.005 per 1M tokens
             prompt_image_token_price: 0,
-            cached_prompt_token_price: 50, // $0.50 per 100M tokens
+            cached_prompt_token_price: 50,     // $0.50 per 100M tokens
             completion_text_token_price: 1500, // $0.015 per 1M tokens
             search_price: 0,
             max_prompt_length: 131072,
@@ -470,7 +469,10 @@ mod tests {
         // 1500 = $0.15 per 1M tokens = $0.00015 per 1K tokens
         // 1000 prompt * 0.00005 + 500 completion * 0.00015 = 0.005 + 0.0075 = 0.0125
         let cost = model.calculate_cost(1000, 500, 0);
-        assert!((cost - 0.0125).abs() < 0.0001, "Expected ~$0.0125, got ${}", cost);
+        assert!(
+            (cost - 0.0125).abs() < 0.0001,
+            "Expected ~$0.0125, got ${cost}"
+        );
     }
 
     #[test]
@@ -482,7 +484,10 @@ mod tests {
         // = (10000 * 50) / 100_000_000 = 500000 / 100000000 = $0.005
         // Total: $0.005 (prompt) + $0.0075 (completion) + $0.005 (cached) = $0.0175
         let cost = model.calculate_cost(1000, 500, 10000);
-        assert!((cost - 0.0175).abs() < 0.0001, "Expected ~$0.0175, got ${}", cost);
+        assert!(
+            (cost - 0.0175).abs() < 0.0001,
+            "Expected ~$0.0175, got ${cost}"
+        );
     }
 
     #[test]
@@ -492,7 +497,7 @@ mod tests {
         // 1M prompt + 100K completion
         // = 1M * 0.00005 + 100K * 0.00015 = $5.0 + $1.5 = $6.50
         let cost = model.calculate_cost(1_000_000, 100_000, 0);
-        assert!((cost - 6.5).abs() < 0.01, "Expected ~$6.50, got ${}", cost);
+        assert!((cost - 6.5).abs() < 0.01, "Expected ~$6.50, got ${cost}");
     }
 
     #[test]
@@ -539,9 +544,15 @@ mod tests {
     fn test_modality_from_proto() {
         assert_eq!(Modality::from(proto::Modality::Text), Modality::Text);
         assert_eq!(Modality::from(proto::Modality::Image), Modality::Image);
-        assert_eq!(Modality::from(proto::Modality::Embedding), Modality::Embedding);
+        assert_eq!(
+            Modality::from(proto::Modality::Embedding),
+            Modality::Embedding
+        );
         // Invalid should default to Text
-        assert_eq!(Modality::from(proto::Modality::InvalidModality), Modality::Text);
+        assert_eq!(
+            Modality::from(proto::Modality::InvalidModality),
+            Modality::Text
+        );
     }
 
     #[test]
@@ -557,7 +568,7 @@ mod tests {
     #[test]
     fn test_language_model_debug() {
         let model = create_test_model();
-        let debug_str = format!("{:?}", model);
+        let debug_str = format!("{model:?}");
         assert!(debug_str.contains("grok-2"));
         assert!(debug_str.contains("1.0"));
     }

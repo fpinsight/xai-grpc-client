@@ -23,14 +23,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for embedding in &response.embeddings {
         println!("Embedding {}:", embedding.index);
         println!("  Dimensions: {}", embedding.vector.len());
-        println!("  First 5 values: {:?}", &embedding.vector[..5.min(embedding.vector.len())]);
+        println!(
+            "  First 5 values: {:?}",
+            &embedding.vector[..5.min(embedding.vector.len())]
+        );
         println!();
     }
 
     // Display usage statistics
     println!("Usage Statistics:");
     println!("  Text embeddings: {}", response.usage.num_text_embeddings);
-    println!("  Image embeddings: {}", response.usage.num_image_embeddings);
+    println!(
+        "  Image embeddings: {}",
+        response.usage.num_image_embeddings
+    );
     println!();
 
     // Calculate cosine similarity between first two embeddings
@@ -39,13 +45,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &response.embeddings[0].vector,
             &response.embeddings[1].vector,
         );
-        println!("Cosine similarity between embeddings 0 and 1: {:.4}", similarity);
+        println!("Cosine similarity between embeddings 0 and 1: {similarity:.4}");
     }
 
     println!("\n=== Multimodal Embeddings Example ===\n");
 
     // Example with both text and images (if you have a multimodal model)
-    let multimodal_request = EmbedRequest::new("embed-vision-v1")
+    let _multimodal_request = EmbedRequest::new("embed-vision-v1")
         .add_text("A cat sitting on a mat")
         .add_image("https://example.com/cat.jpg");
 

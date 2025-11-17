@@ -168,11 +168,7 @@ impl GrokClient {
             .await?
             .into_inner();
 
-        Ok(response
-            .models
-            .into_iter()
-            .map(Into::into)
-            .collect())
+        Ok(response.models.into_iter().map(Into::into).collect())
     }
 
     /// Get detailed information about a specific model by name
@@ -194,7 +190,10 @@ impl GrokClient {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn get_model(&mut self, name: impl Into<String>) -> Result<crate::models::LanguageModel> {
+    pub async fn get_model(
+        &mut self,
+        name: impl Into<String>,
+    ) -> Result<crate::models::LanguageModel> {
         let request = proto::GetModelRequest { name: name.into() };
 
         let response = self
@@ -231,11 +230,7 @@ impl GrokClient {
             .await?
             .into_inner();
 
-        Ok(response
-            .models
-            .into_iter()
-            .map(Into::into)
-            .collect())
+        Ok(response.models.into_iter().map(Into::into).collect())
     }
 
     /// Get detailed information about a specific embedding model by name
@@ -256,7 +251,10 @@ impl GrokClient {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn get_embedding_model(&mut self, name: impl Into<String>) -> Result<crate::models::EmbeddingModel> {
+    pub async fn get_embedding_model(
+        &mut self,
+        name: impl Into<String>,
+    ) -> Result<crate::models::EmbeddingModel> {
         let request = proto::GetModelRequest { name: name.into() };
 
         let response = self
@@ -287,18 +285,16 @@ impl GrokClient {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn list_image_generation_models(&mut self) -> Result<Vec<crate::models::ImageGenerationModel>> {
+    pub async fn list_image_generation_models(
+        &mut self,
+    ) -> Result<Vec<crate::models::ImageGenerationModel>> {
         let response = self
             .models_client
             .list_image_generation_models(())
             .await?
             .into_inner();
 
-        Ok(response
-            .models
-            .into_iter()
-            .map(Into::into)
-            .collect())
+        Ok(response.models.into_iter().map(Into::into).collect())
     }
 
     /// Get detailed information about a specific image generation model by name
@@ -318,7 +314,10 @@ impl GrokClient {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn get_image_generation_model(&mut self, name: impl Into<String>) -> Result<crate::models::ImageGenerationModel> {
+    pub async fn get_image_generation_model(
+        &mut self,
+        name: impl Into<String>,
+    ) -> Result<crate::models::ImageGenerationModel> {
         let request = proto::GetModelRequest { name: name.into() };
 
         let response = self
@@ -354,7 +353,10 @@ impl GrokClient {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn embed(&mut self, request: crate::embedding::EmbedRequest) -> Result<crate::embedding::EmbedResponse> {
+    pub async fn embed(
+        &mut self,
+        request: crate::embedding::EmbedRequest,
+    ) -> Result<crate::embedding::EmbedResponse> {
         let proto_request = self.embed_request_to_proto(&request);
 
         let response = self
@@ -395,7 +397,10 @@ impl GrokClient {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn tokenize(&mut self, request: crate::tokenize::TokenizeRequest) -> Result<crate::tokenize::TokenizeResponse> {
+    pub async fn tokenize(
+        &mut self,
+        request: crate::tokenize::TokenizeRequest,
+    ) -> Result<crate::tokenize::TokenizeResponse> {
         let proto_request = proto::TokenizeTextRequest {
             text: request.text,
             model: request.model,
@@ -408,11 +413,15 @@ impl GrokClient {
             .await?
             .into_inner();
 
-        let tokens = response.tokens.into_iter().map(|t| crate::tokenize::Token {
-            token_id: t.token_id,
-            string_token: t.string_token,
-            token_bytes: t.token_bytes,
-        }).collect();
+        let tokens = response
+            .tokens
+            .into_iter()
+            .map(|t| crate::tokenize::Token {
+                token_id: t.token_id,
+                string_token: t.string_token,
+                token_bytes: t.token_bytes,
+            })
+            .collect();
 
         Ok(crate::tokenize::TokenizeResponse {
             tokens,
@@ -455,11 +464,7 @@ impl GrokClient {
     /// }
     /// ```
     pub async fn get_api_key_info(&mut self) -> Result<crate::api_key::ApiKeyInfo> {
-        let response = self
-            .auth_client
-            .get_api_key_info(())
-            .await?
-            .into_inner();
+        let response = self.auth_client.get_api_key_info(()).await?.into_inner();
 
         Ok(response.into())
     }
@@ -468,7 +473,10 @@ impl GrokClient {
     ///
     /// This is a simpler API for basic text completion without conversation structure.
     /// For most use cases, `complete_chat()` is recommended.
-    pub async fn sample_text(&mut self, request: crate::sample::SampleRequest) -> Result<crate::sample::SampleResponse> {
+    pub async fn sample_text(
+        &mut self,
+        request: crate::sample::SampleRequest,
+    ) -> Result<crate::sample::SampleResponse> {
         let proto_request = proto::SampleTextRequest {
             prompt: request.prompts,
             model: request.model,
@@ -521,17 +529,16 @@ impl GrokClient {
             .await?
             .into_inner();
 
-        let stream = response.map(|result| {
-            result
-                .map_err(Into::into)
-                .map(Into::into)
-        });
+        let stream = response.map(|result| result.map_err(Into::into).map(Into::into));
 
         Ok(Box::pin(stream))
     }
 
     /// Generate images from text prompts.
-    pub async fn generate_image(&mut self, request: crate::image::ImageGenerationRequest) -> Result<crate::image::ImageGenerationResponse> {
+    pub async fn generate_image(
+        &mut self,
+        request: crate::image::ImageGenerationRequest,
+    ) -> Result<crate::image::ImageGenerationResponse> {
         let proto_request = proto::GenerateImageRequest {
             prompt: request.prompt,
             image: request.image_url.map(|url| proto::ImageUrlContent {
@@ -557,7 +564,10 @@ impl GrokClient {
     }
 
     /// Search documents in collections for RAG applications.
-    pub async fn search_documents(&mut self, request: crate::documents::DocumentSearchRequest) -> Result<crate::documents::DocumentSearchResponse> {
+    pub async fn search_documents(
+        &mut self,
+        request: crate::documents::DocumentSearchRequest,
+    ) -> Result<crate::documents::DocumentSearchResponse> {
         let proto_request = proto::SearchRequest {
             query: request.query,
             source: Some(proto::DocumentsSource {
@@ -565,8 +575,12 @@ impl GrokClient {
             }),
             limit: request.limit,
             ranking_metric: Some(match request.ranking_metric {
-                crate::documents::RankingMetric::L2Distance => proto::RankingMetric::L2Distance as i32,
-                crate::documents::RankingMetric::CosineSimilarity => proto::RankingMetric::CosineSimilarity as i32,
+                crate::documents::RankingMetric::L2Distance => {
+                    proto::RankingMetric::L2Distance as i32
+                }
+                crate::documents::RankingMetric::CosineSimilarity => {
+                    proto::RankingMetric::CosineSimilarity as i32
+                }
             }),
             instructions: request.instructions,
         };

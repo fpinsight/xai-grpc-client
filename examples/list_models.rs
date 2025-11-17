@@ -19,28 +19,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         println!("Max Context: {} tokens", model.max_prompt_length);
-        println!("Multimodal: {}", if model.supports_multimodal() { "Yes" } else { "No" });
+        println!(
+            "Multimodal: {}",
+            if model.supports_multimodal() {
+                "Yes"
+            } else {
+                "No"
+            }
+        );
 
         // Display pricing
         println!("\nPricing:");
-        println!("  Prompt: ${:.4}/1M tokens",
-            model.prompt_text_token_price as f64 / 100.0 / 1_000_000.0);
-        println!("  Completion: ${:.4}/1M tokens",
-            model.completion_text_token_price as f64 / 100.0 / 1_000_000.0);
+        println!(
+            "  Prompt: ${:.4}/1M tokens",
+            model.prompt_text_token_price as f64 / 100.0 / 1_000_000.0
+        );
+        println!(
+            "  Completion: ${:.4}/1M tokens",
+            model.completion_text_token_price as f64 / 100.0 / 1_000_000.0
+        );
 
         if model.cached_prompt_token_price > 0 {
-            println!("  Cached prompt: ${:.4}/100M tokens",
-                model.cached_prompt_token_price as f64);
+            println!(
+                "  Cached prompt: ${:.4}/100M tokens",
+                model.cached_prompt_token_price as f64
+            );
         }
 
         if model.search_price > 0 {
-            println!("  Search: ${:.4}/1M searches",
-                model.search_price as f64 / 100.0 / 1_000_000.0);
+            println!(
+                "  Search: ${:.4}/1M searches",
+                model.search_price as f64 / 100.0 / 1_000_000.0
+            );
         }
 
         // Calculate example cost
         let cost = model.calculate_cost(10000, 1000, 0);
-        println!("\nExample: 10K prompt + 1K completion = ${:.4}", cost);
+        println!("\nExample: 10K prompt + 1K completion = ${cost:.4}");
         println!();
     }
 

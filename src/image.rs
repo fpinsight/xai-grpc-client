@@ -131,7 +131,10 @@ mod tests {
         assert_eq!(request.model, "image-gen-1");
         assert_eq!(request.prompt, "A sunset over mountains");
         assert_eq!(request.n, Some(3));
-        assert_eq!(request.image_url, Some("https://example.com/source.jpg".to_string()));
+        assert_eq!(
+            request.image_url,
+            Some("https://example.com/source.jpg".to_string())
+        );
         assert_eq!(request.format, ImageFormat::Base64);
         assert_eq!(request.user, Some("user-123".to_string()));
     }
@@ -158,7 +161,9 @@ mod tests {
     #[test]
     fn test_generated_image_from_proto_base64() {
         let proto_image = proto::GeneratedImage {
-            image: Some(proto::generated_image::Image::Base64("base64data".to_string())),
+            image: Some(proto::generated_image::Image::Base64(
+                "base64data".to_string(),
+            )),
             up_sampled_prompt: "Enhanced prompt".to_string(),
             respect_moderation: true,
         };
@@ -173,7 +178,9 @@ mod tests {
     #[test]
     fn test_generated_image_from_proto_url() {
         let proto_image = proto::GeneratedImage {
-            image: Some(proto::generated_image::Image::Url("https://example.com/image.jpg".to_string())),
+            image: Some(proto::generated_image::Image::Url(
+                "https://example.com/image.jpg".to_string(),
+            )),
             up_sampled_prompt: "Enhanced prompt".to_string(),
             respect_moderation: false,
         };

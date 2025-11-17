@@ -177,14 +177,8 @@ impl From<proto::ApiKey> for ApiKeyInfo {
             redacted_api_key: proto.redacted_api_key,
             user_id: proto.user_id,
             name: proto.name,
-            created_at: proto
-                .create_time
-                .map(|t| t.seconds)
-                .unwrap_or(0),
-            modified_at: proto
-                .modify_time
-                .map(|t| t.seconds)
-                .unwrap_or(0),
+            created_at: proto.create_time.map(|t| t.seconds).unwrap_or(0),
+            modified_at: proto.modify_time.map(|t| t.seconds).unwrap_or(0),
             modified_by: proto.modified_by,
             team_id: proto.team_id,
             acls: proto.acls,
@@ -205,7 +199,7 @@ mod tests {
             redacted_api_key: "xai-abc***xyz".to_string(),
             user_id: "user-123".to_string(),
             name: "Test API Key".to_string(),
-            created_at: 1704067200, // 2024-01-01 00:00:00 UTC
+            created_at: 1704067200,  // 2024-01-01 00:00:00 UTC
             modified_at: 1704153600, // 2024-01-02 00:00:00 UTC
             modified_by: "user-123".to_string(),
             team_id: "team-456".to_string(),
@@ -284,7 +278,7 @@ mod tests {
     #[test]
     fn test_api_key_info_debug() {
         let info = create_test_api_key_info();
-        let debug_str = format!("{:?}", info);
+        let debug_str = format!("{info:?}");
         assert!(debug_str.contains("Test API Key"));
         assert!(debug_str.contains("team-456"));
     }

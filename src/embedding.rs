@@ -256,16 +256,15 @@ mod tests {
 
     #[test]
     fn test_encoding_format() {
-        let request = EmbedRequest::new("embed-large-v1")
-            .with_encoding_format(EmbedEncodingFormat::Base64);
+        let request =
+            EmbedRequest::new("embed-large-v1").with_encoding_format(EmbedEncodingFormat::Base64);
 
         assert_eq!(request.encoding_format, EmbedEncodingFormat::Base64);
     }
 
     #[test]
     fn test_with_user() {
-        let request = EmbedRequest::new("embed-large-v1")
-            .with_user("user123");
+        let request = EmbedRequest::new("embed-large-v1").with_user("user123");
 
         assert_eq!(request.user, Some("user123".to_string()));
     }

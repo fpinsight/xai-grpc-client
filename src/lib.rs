@@ -145,8 +145,15 @@ pub mod image;
 pub mod documents;
 
 // Re-exports for convenient access
+pub use api_key::ApiKeyInfo;
 pub use client::{GrokClient, GrokConfig};
+pub use documents::{DocumentSearchRequest, DocumentSearchResponse, RankingMetric, SearchMatch};
+pub use embedding::{
+    EmbedEncodingFormat, EmbedInput, EmbedRequest, EmbedResponse, Embedding, EmbeddingUsage,
+};
 pub use error::{GrokError, Result};
+pub use image::{GeneratedImage, ImageFormat, ImageGenerationRequest, ImageGenerationResponse};
+pub use models::{EmbeddingModel, ImageGenerationModel, LanguageModel, Modality};
 pub use request::{
     ChatRequest, CompletionOptions, ContentPart, ImageDetail, Message, MessageContent,
     ReasoningEffort, ResponseFormat, SearchConfig, SearchMode, SearchSource,
@@ -154,23 +161,12 @@ pub use request::{
 pub use response::{
     ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb,
 };
+pub use sample::{SampleChoice, SampleRequest, SampleResponse};
+pub use tokenize::{Token, TokenizeRequest, TokenizeResponse};
 pub use tools::{
     CollectionsSearchTool, DocumentSearchTool, FunctionCall, FunctionTool, McpTool, Tool, ToolCall,
     ToolCallKind, ToolCallStatusKind, ToolChoice, WebSearchTool, XSearchTool,
 };
-pub use embedding::{
-    EmbedEncodingFormat, EmbedInput, EmbedRequest, EmbedResponse, Embedding, EmbeddingUsage,
-};
-pub use tokenize::{
-    Token, TokenizeRequest, TokenizeResponse,
-};
-pub use models::{
-    EmbeddingModel, ImageGenerationModel, LanguageModel, Modality,
-};
-pub use api_key::ApiKeyInfo;
-pub use sample::{SampleRequest, SampleResponse, SampleChoice};
-pub use image::{ImageGenerationRequest, ImageGenerationResponse, GeneratedImage, ImageFormat};
-pub use documents::{DocumentSearchRequest, DocumentSearchResponse, SearchMatch, RankingMetric};
 
 /// Prelude module for convenient imports
 pub mod prelude {
