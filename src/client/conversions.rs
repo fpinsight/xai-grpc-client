@@ -8,6 +8,7 @@ use crate::{
     response::{ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb},
     tools::ToolCall,
 };
+use base64::Engine;
 
 impl GrokClient {
     /// Convert ChatRequest to protobuf GetCompletionsRequest
@@ -308,5 +309,110 @@ impl GrokClient {
             5 => FinishReason::Error("Time limit reached".to_string()), // REASON_TIME_LIMIT
             _ => FinishReason::Unknown,
         }
+    }
+
+    /// Convert EmbedRequest to protobuf EmbedRequest
+    pub(super) fn embed_request_to_proto(
+        &self,
+        request: &crate::embedding::EmbedRequest,
+    ) -> proto::EmbedRequest {
+        use crate::embedding::{EmbedEncodingFormat, EmbedInput};
+
+        let input = request
+            .inputs
+            .iter()
+            .map(|input| match input {
+                EmbedInput::Text(text) => proto::EmbedInput {
+                    input: Some(proto::embed_input::Input::String(text.clone())),
+                },
+                EmbedInput::Image { url, detail } => proto::EmbedInput {
+                    input: Some(proto::embed_input::Input::ImageUrl(
+                        proto::ImageUrlContent {
+                            image_url: url.clone(),
+                            detail: match detail {
+                                ImageDetail::Auto => proto::ImageDetail::DetailAuto as i32,
+                                ImageDetail::Low => proto::ImageDetail::DetailLow as i32,
+                                ImageDetail::High => proto::ImageDetail::DetailHigh as i32,
+                            },
+                        },
+                    )),
+                },
+            })
+            .collect();
+
+        proto::EmbedRequest {
+            input,
+            model: request.model.clone(),
+            encoding_format: match request.encoding_format {
+                EmbedEncodingFormat::Float => proto::EmbedEncodingFormat::FormatFloat as i32,
+                EmbedEncodingFormat::Base64 => proto::EmbedEncodingFormat::FormatBase64 as i32,
+            },
+            user: request.user.clone().unwrap_or_default(),
+        }
+    }
+
+    /// Convert protobuf EmbedResponse to EmbedResponse
+    pub(super) fn proto_to_embed_response(
+        response: proto::EmbedResponse,
+    ) -> Result<crate::embedding::EmbedResponse> {
+        let embeddings = response
+            .embeddings
+            .into_iter()
+            .map(|emb| {
+                // Take the first feature vector, failing if missing
+                let fv =
+                    emb.embeddings.into_iter().next().ok_or_else(|| {
+                        GrokError::InvalidRequest("missing embedding vector".into())
+                    })?;
+
+                let vector = if !fv.float_array.is_empty() {
+                    fv.float_array
+                } else if !fv.base64_array.is_empty() {
+                    Self::decode_base64_embedding(&fv.base64_array)?
+                } else {
+                    return Err(GrokError::InvalidRequest(
+                        "embedding had neither float nor base64 array".into(),
+                    ));
+                };
+
+                Ok(crate::embedding::Embedding {
+                    index: emb.index as usize,
+                    vector,
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        Ok(crate::embedding::EmbedResponse {
+            id: response.id,
+            embeddings,
+            usage: response.usage.map(Into::into).unwrap_or_default(),
+            model: response.model,
+            system_fingerprint: response.system_fingerprint,
+        })
+    }
+
+    fn decode_base64_embedding(base64_str: &str) -> Result<Vec<f32>> {
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(base64_str)
+            .map_err(|e| GrokError::InvalidRequest(format!("invalid base64 embedding: {e}")))?;
+
+        if decoded.len() % 4 != 0 {
+            return Err(GrokError::InvalidRequest(
+                "embedding byte length not divisible by 4".into(),
+            ));
+        }
+
+        // Convert bytes to f32 array (little-endian)
+        let floats: Vec<f32> = decoded
+            .chunks_exact(4)
+            .map(|chunk| {
+                let bytes: [u8; 4] = chunk
+                    .try_into()
+                    .expect("chunk size already validated as divisible by 4");
+                f32::from_le_bytes(bytes)
+            })
+            .collect();
+
+        Ok(floats)
     }
 }

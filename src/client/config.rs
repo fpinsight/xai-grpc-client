@@ -1,7 +1,14 @@
 use crate::{
     auth::AuthInterceptor,
     error::{GrokError, Result},
+    proto::auth_client::AuthClient,
     proto::chat_client::ChatClient,
+    proto::documents_client::DocumentsClient,
+    proto::embedder_client::EmbedderClient,
+    proto::image_client::ImageClient,
+    proto::models_client::ModelsClient,
+    proto::sample_client::SampleClient,
+    proto::tokenize_client::TokenizeClient,
 };
 use secrecy::{ExposeSecret, SecretString};
 use std::time::Duration;
@@ -93,6 +100,20 @@ impl Default for GrokConfig {
 pub struct GrokClient {
     pub(super) inner:
         ChatClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) models_client:
+        ModelsClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) embedder_client:
+        EmbedderClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) tokenize_client:
+        TokenizeClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) auth_client:
+        AuthClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) sample_client:
+        SampleClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) image_client:
+        ImageClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
+    pub(super) documents_client:
+        DocumentsClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>,
     pub(super) config: GrokConfig,
 }
 
@@ -188,9 +209,28 @@ impl GrokClient {
         let channel = endpoint.connect().await?;
 
         let interceptor = AuthInterceptor::new(config.api_key.clone());
-        let inner = ChatClient::with_interceptor(channel, interceptor);
+        let inner = ChatClient::with_interceptor(channel.clone(), interceptor.clone());
+        let models_client = ModelsClient::with_interceptor(channel.clone(), interceptor.clone());
+        let embedder_client =
+            EmbedderClient::with_interceptor(channel.clone(), interceptor.clone());
+        let tokenize_client =
+            TokenizeClient::with_interceptor(channel.clone(), interceptor.clone());
+        let auth_client = AuthClient::with_interceptor(channel.clone(), interceptor.clone());
+        let sample_client = SampleClient::with_interceptor(channel.clone(), interceptor.clone());
+        let image_client = ImageClient::with_interceptor(channel.clone(), interceptor.clone());
+        let documents_client = DocumentsClient::with_interceptor(channel, interceptor);
 
-        Ok(Self { inner, config })
+        Ok(Self {
+            inner,
+            models_client,
+            embedder_client,
+            tokenize_client,
+            auth_client,
+            sample_client,
+            image_client,
+            documents_client,
+            config,
+        })
     }
 
     /// Tests the connection by sending a simple request to the API.

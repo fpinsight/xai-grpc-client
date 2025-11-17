@@ -123,9 +123,37 @@ pub mod response;
 /// Tool calling support (function calling, web search, etc.).
 pub mod tools;
 
+/// Model listing and information API.
+pub mod models;
+
+/// Embedding API for vector representations.
+pub mod embedding;
+
+/// Tokenization API for counting tokens.
+pub mod tokenize;
+
+/// API key information and status.
+pub mod api_key;
+
+/// Sample API for raw text sampling.
+pub mod sample;
+
+/// Image generation API.
+pub mod image;
+
+/// Documents search API for RAG.
+pub mod documents;
+
 // Re-exports for convenient access
+pub use api_key::ApiKeyInfo;
 pub use client::{GrokClient, GrokConfig};
+pub use documents::{DocumentSearchRequest, DocumentSearchResponse, RankingMetric, SearchMatch};
+pub use embedding::{
+    EmbedEncodingFormat, EmbedInput, EmbedRequest, EmbedResponse, Embedding, EmbeddingUsage,
+};
 pub use error::{GrokError, Result};
+pub use image::{GeneratedImage, ImageFormat, ImageGenerationRequest, ImageGenerationResponse};
+pub use models::{EmbeddingModel, ImageGenerationModel, LanguageModel, Modality};
 pub use request::{
     ChatRequest, CompletionOptions, ContentPart, ImageDetail, Message, MessageContent,
     ReasoningEffort, ResponseFormat, SearchConfig, SearchMode, SearchSource,
@@ -133,6 +161,8 @@ pub use request::{
 pub use response::{
     ChatChunk, ChatResponse, FinishReason, LogProb, LogProbs, TokenUsage, TopLogProb,
 };
+pub use sample::{SampleChoice, SampleRequest, SampleResponse};
+pub use tokenize::{Token, TokenizeRequest, TokenizeResponse};
 pub use tools::{
     CollectionsSearchTool, DocumentSearchTool, FunctionCall, FunctionTool, McpTool, Tool, ToolCall,
     ToolCallKind, ToolCallStatusKind, ToolChoice, WebSearchTool, XSearchTool,
