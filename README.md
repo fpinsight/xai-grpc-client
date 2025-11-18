@@ -32,10 +32,35 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-xai-grpc-client = "0.1"
+xai-grpc-client = "0.2"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 ```
+
+### TLS Crypto Provider
+
+The crate uses `rustls` for TLS and provides features to select the cryptographic backend. By default, it uses the `ring` crypto provider, which works out of the box for most users.
+
+**Default (ring backend):**
+```toml
+[dependencies]
+xai-grpc-client = "0.2"
+```
+
+**Using aws-lc-rs backend:**
+
+If you need to use the `aws-lc-rs` crypto provider instead (e.g., for FIPS compliance or performance reasons), disable the default features and enable the `aws-lc-rs-crypto` feature:
+
+```toml
+[dependencies]
+xai-grpc-client = { version = "0.2", default-features = false, features = ["aws-lc-rs-crypto"] }
+```
+
+**Available features:**
+- `ring-crypto` (default) - Uses the `ring` cryptographic backend
+- `aws-lc-rs-crypto` - Uses the `aws-lc-rs` cryptographic backend
+
+**Note:** You must select exactly one crypto provider. The default feature ensures this works automatically for most users.
 
 ## Quick Start
 

@@ -1,6 +1,6 @@
 [package]
 name = "xai-grpc-client"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Thierry Bourrillon <thierry.bourrillon@fpinsight.com>"]
 license = "MIT OR Apache-2.0"
@@ -47,8 +47,20 @@ serde_json = "1.0"
 # Security
 secrecy = "0.10"
 
+# TLS - optional dependency to control crypto provider selection
+rustls = { version = "0.23", optional = true }
+
 # Encoding
 base64 = "0.22"
+
+[features]
+default = ["ring-crypto"]
+
+# Feature to select the `ring` crypto provider (default)
+ring-crypto = ["rustls/ring"]
+
+# Feature to select the `aws-lc-rs` crypto provider
+aws-lc-rs-crypto = ["rustls/aws-lc-rs"]
 
 [build-dependencies]
 tonic-prost-build = "0.14"
