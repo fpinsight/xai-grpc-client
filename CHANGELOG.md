@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-11-18
+
+### Fixed
+- Added default crypto provider for rustls to resolve compilation errors
+  - The crate now provides `ring` as the default crypto provider
+  - Users can opt into `aws-lc-rs` with the `aws-lc-rs-crypto` feature
+  - Prevents "exactly one crypto provider must be selected" errors
+
+### Added
+- New cargo features for crypto provider selection:
+  - `ring-crypto` (default) - Uses the `ring` cryptographic backend
+  - `aws-lc-rs-crypto` - Uses the `aws-lc-rs` cryptographic backend
+- Documentation for TLS crypto provider selection in README
+
+### Changed
+- Made `rustls` an optional dependency to enable feature-based crypto provider selection
+- Updated README installation instructions to version 0.2
+- Added TLS Crypto Provider section to README with usage examples
+
 ## [0.2.0] - 2025-11-17
 
 ### Added
@@ -112,6 +131,7 @@ This release achieves **100% (19/19)** API coverage - complete implementation of
 - API keys stored using `secrecy::Secret` to prevent accidental exposure
 - TLS support for secure gRPC connections
 
-[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/fpinsight/xai-grpc-client/releases/tag/v0.1.0
