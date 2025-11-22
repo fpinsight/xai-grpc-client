@@ -32,35 +32,69 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-xai-grpc-client = "0.2"
+xai-grpc-client = "0.3"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 ```
 
-### TLS Crypto Provider
+### TLS Configuration
 
-The crate uses `rustls` for TLS and provides features to select the cryptographic backend. By default, it uses the `ring` crypto provider, which works out of the box for most users.
+The crate provides flexible TLS configuration through feature flags for root certificate selection:
 
-**Default (ring backend):**
+**Default (webpki-roots - recommended for containers):**
 ```toml
 [dependencies]
-xai-grpc-client = "0.2"
+xai-grpc-client = "0.3"
 ```
 
-**Using aws-lc-rs backend:**
-
-If you need to use the `aws-lc-rs` crypto provider instead (e.g., for FIPS compliance or performance reasons), disable the default features and enable the `aws-lc-rs-crypto` feature:
-
+**Using native system roots (recommended for development):**
 ```toml
 [dependencies]
-xai-grpc-client = { version = "0.2", default-features = false, features = ["aws-lc-rs-crypto"] }
+xai-grpc-client = { version = "0.3", features = ["tls-native-roots"], default-features = false }
+```
+
+**Using both root stores (if unsure):**
+```toml
+[dependencies]
+xai-grpc-client = { version = "0.3", features = ["tls-roots"], default-features = false }
 ```
 
 **Available features:**
-- `ring-crypto` (default) - Uses the `ring` cryptographic backend
-- `aws-lc-rs-crypto` - Uses the `aws-lc-rs` cryptographic backend
+- `tls-webpki-roots` (default) - Uses Mozilla's root certificates (works in containers/distroless)
+- `tls-native-roots` - Uses the system's native certificate store
+- `tls-roots` - Enables both root stores simultaneously
 
-**Note:** You must select exactly one crypto provider. The default feature ensures this works automatically for most users.
+**Advanced: Custom TLS Configuration**
+
+For advanced use cases (custom CA certificates, proxies, custom timeouts), use the `with_channel()` constructor:
+
+```rust
+use xai_grpc_client::{GrokClient, Channel, ClientTlsConfig, Certificate};
+use secrecy::SecretString;
+use std::time::Duration;
+
+// Load custom CA certificate
+let ca_cert = std::fs::read("path/to/ca.pem")?;
+let ca = Certificate::from_pem(ca_cert);
+
+// Configure TLS with custom CA
+let tls_config = ClientTlsConfig::new()
+    .ca_certificate(ca)
+    .domain_name("api.x.ai");
+
+// Build custom channel
+let channel = Channel::from_static("https://api.x.ai")
+    .timeout(Duration::from_secs(120))
+    .tls_config(tls_config)?
+    .connect()
+    .await?;
+
+// Create client with custom channel
+let api_key = SecretString::from("your-key".to_string());
+let client = GrokClient::with_channel(channel, api_key);
+```
+
+See the [custom_tls example](examples/custom_tls.rs) for more details.
 
 ## Quick Start
 
@@ -581,6 +615,9 @@ cargo run --example embeddings
 
 # Tokenization
 cargo run --example tokenize
+
+# Custom TLS configuration
+cargo run --example custom_tls
 ```
 
 ## Contributing

@@ -118,6 +118,141 @@ pub struct GrokClient {
 }
 
 impl GrokClient {
+    /// Creates a client with a custom configured channel.
+    ///
+    /// This constructor provides maximum flexibility by allowing you to bring
+    /// your own configured `Channel`. Use this when you need:
+    ///
+    /// - **Custom TLS configuration** (e.g., custom CA certificates, specific domain validation)
+    /// - **Proxy support** through custom channel configuration
+    /// - **Custom middleware** or tracing layers
+    /// - **Mock channels** for testing
+    /// - **Custom timeouts** or connection pooling
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - A configured tonic Channel
+    /// * `api_key` - Your xAI API key (stored securely using SecretString)
+    ///
+    /// # Examples
+    ///
+    /// ## Custom TLS with specific domain validation
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    /// use tonic::transport::{Channel, ClientTlsConfig};
+    /// use secrecy::SecretString;
+    /// use std::time::Duration;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let tls_config = ClientTlsConfig::new()
+    ///     .domain_name("api.x.ai");
+    ///
+    /// let channel = Channel::from_static("https://api.x.ai")
+    ///     .timeout(Duration::from_secs(120))
+    ///     .tls_config(tls_config)?
+    ///     .connect()
+    ///     .await?;
+    ///
+    /// let api_key = SecretString::from("xai-your-key".to_string());
+    /// let client = GrokClient::with_channel(channel, api_key);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Custom CA certificate
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    /// use tonic::transport::{Channel, ClientTlsConfig, Certificate};
+    /// use secrecy::SecretString;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ca_cert = std::fs::read("path/to/ca.pem")?;
+    /// let ca = Certificate::from_pem(ca_cert);
+    ///
+    /// let tls_config = ClientTlsConfig::new()
+    ///     .ca_certificate(ca)
+    ///     .domain_name("api.x.ai");
+    ///
+    /// let channel = Channel::from_static("https://api.x.ai")
+    ///     .tls_config(tls_config)?
+    ///     .connect()
+    ///     .await?;
+    ///
+    /// let api_key = SecretString::from("xai-your-key".to_string());
+    /// let client = GrokClient::with_channel(channel, api_key);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_channel(channel: Channel, api_key: SecretString) -> Self {
+        let interceptor = AuthInterceptor::new(api_key.clone());
+
+        let inner = ChatClient::with_interceptor(channel.clone(), interceptor.clone());
+        let models_client = ModelsClient::with_interceptor(channel.clone(), interceptor.clone());
+        let embedder_client =
+            EmbedderClient::with_interceptor(channel.clone(), interceptor.clone());
+        let tokenize_client =
+            TokenizeClient::with_interceptor(channel.clone(), interceptor.clone());
+        let auth_client = AuthClient::with_interceptor(channel.clone(), interceptor.clone());
+        let sample_client = SampleClient::with_interceptor(channel.clone(), interceptor.clone());
+        let image_client = ImageClient::with_interceptor(channel.clone(), interceptor.clone());
+        let documents_client = DocumentsClient::with_interceptor(channel, interceptor);
+
+        Self {
+            inner,
+            models_client,
+            embedder_client,
+            tokenize_client,
+            auth_client,
+            sample_client,
+            image_client,
+            documents_client,
+            config: GrokConfig {
+                endpoint: "https://api.x.ai".to_string(),
+                api_key,
+                default_model: "grok-code-fast-1".to_string(),
+                timeout: Duration::from_secs(60),
+            },
+        }
+    }
+
+    /// Creates a client with default configuration using the provided API key.
+    ///
+    /// This is the simplest way to create a client when you have an API key
+    /// at hand. It uses default settings for endpoint, model, and timeout.
+    ///
+    /// # Arguments
+    ///
+    /// * `api_key` - Your xAI API key
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Connection to the API fails
+    /// - TLS configuration fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::GrokClient;
+    /// use secrecy::SecretString;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api_key = SecretString::from("xai-your-key".to_string());
+    /// let mut client = GrokClient::connect(api_key).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect(api_key: SecretString) -> Result<Self> {
+        let config = GrokConfig {
+            api_key,
+            ..Default::default()
+        };
+
+        Self::new(config).await
+    }
+
     /// Creates a client using the `XAI_API_KEY` environment variable.
     ///
     /// This is the simplest way to create a client. It uses default settings
