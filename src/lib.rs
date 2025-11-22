@@ -168,6 +168,11 @@ pub use tools::{
     ToolCallKind, ToolCallStatusKind, ToolChoice, WebSearchTool, XSearchTool,
 };
 
+// Re-export tonic types for users who need custom channel configuration
+// This allows users to configure TLS, timeouts, and other transport options
+// without adding tonic as a direct dependency
+pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint};
+
 /// Prelude module for convenient imports
 pub mod prelude {
     pub use crate::{

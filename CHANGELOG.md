@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-11-22
+
+### Breaking Changes
+- **Removed** `ring-crypto` and `aws-lc-rs-crypto` features
+  - These features were removed to avoid conflicts with workspace-level rustls configuration
+  - The library no longer manages rustls crypto providers directly
+- **Removed** direct `rustls` dependency
+  - TLS is now fully delegated to tonic's built-in features
+- **Changed** feature flags for TLS root certificate selection:
+  - New default: `tls-webpki-roots` (Mozilla's root certificates)
+  - Available options: `tls-webpki-roots`, `tls-native-roots`, `tls-roots`
+
+### Added
+- ✨ **Flexible channel constructor**: `GrokClient::with_channel(channel, api_key)`
+  - Enables "Bring Your Own Channel" pattern for maximum flexibility
+  - Supports custom TLS configuration (custom CA certificates, domain validation)
+  - Enables proxy support and custom middleware
+  - Useful for testing with mock channels
+  - See `examples/custom_tls.rs` for usage examples
+- 🚀 **Convenience constructor**: `GrokClient::connect(api_key)`
+  - Simpler API for programmatic client creation
+  - Uses default configuration with provided API key
+- 📦 **Re-exported tonic types** for advanced configuration:
+  - `Channel`, `ClientTlsConfig`, `Certificate`, `Endpoint`
+  - Users no longer need to add tonic as a direct dependency
+- 📝 **New example**: `examples/custom_tls.rs`
+  - Demonstrates custom TLS configuration
+  - Shows how to use custom CA certificates
+  - Explains feature flag selection
+
+### Changed
+- 🔧 **TLS configuration is now feature-based**:
+  - `tls-webpki-roots` (default) - Uses Mozilla's root certificates (recommended for containers)
+  - `tls-native-roots` - Uses system native certificate store (recommended for development)
+  - `tls-roots` - Enables both root stores simultaneously
+- 📚 **Updated README** with comprehensive TLS documentation
+  - Added section on custom TLS configuration
+  - Documented the new `with_channel()` API
+  - Updated migration guide for breaking changes
+
+### Fixed
+- 🐛 **Resolved TLS conflicts** with parent workspace rustls configuration
+  - Fixes "UnknownIssuer" errors when used in workspaces with custom TLS setups
+  - Library no longer installs global `CryptoProvider`
+  - Users have full control over TLS configuration via channel setup
+
+### Migration Guide
+
+**If you were using the old crypto provider features:**
+
+```toml
+# Old (v0.2.x)
+[dependencies]
+xai-grpc-client = { version = "0.2", features = ["ring-crypto", "webpki-roots"] }
+
+# New (v0.3.x) - Default
+[dependencies]
+xai-grpc-client = "0.3"  # Uses tls-webpki-roots by default
+
+# New (v0.3.x) - With native roots
+[dependencies]
+xai-grpc-client = { version = "0.3", features = ["tls-native-roots"], default-features = false }
+```
+
+**If you need custom TLS configuration:**
+
+```rust
+use xai_grpc_client::{GrokClient, Channel, ClientTlsConfig};
+use secrecy::SecretString;
+
+// Build custom channel with your TLS config
+let tls_config = ClientTlsConfig::new().domain_name("api.x.ai");
+let channel = Channel::from_static("https://api.x.ai")
+    .tls_config(tls_config)?
+    .connect()
+    .await?;
+
+// Use with_channel instead of new()
+let api_key = SecretString::from("your-key".to_string());
+let client = GrokClient::with_channel(channel, api_key);
+```
+
 ## [0.2.1] - 2025-11-18
 
 ### Fixed
@@ -131,7 +213,8 @@ This release achieves **100% (19/19)** API coverage - complete implementation of
 - API keys stored using `secrecy::Secret` to prevent accidental exposure
 - TLS support for secure gRPC connections
 
-[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.1...HEAD
+[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/fpinsight/xai-grpc-client/releases/tag/v0.1.0
