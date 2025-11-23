@@ -4,6 +4,7 @@ version = "0.3.0"
 edition = "2021"
 authors = ["Thierry Bourrillon <thierry.bourrillon@fpinsight.com>"]
 license = "MIT OR Apache-2.0"
+
 description = "Feature-complete gRPC client for xAI's Grok API with streaming, tools, multimodal support"
 repository = "https://github.com/fpinsight/xai-grpc-client"
 homepage = "https://github.com/fpinsight/xai-grpc-client"
@@ -49,6 +50,9 @@ secrecy = "0.10"
 
 # Encoding
 base64 = "0.22"
+
+# URL parsing
+url = "2.5"
 
 [features]
 # Default to webpki-roots (works in most environments including containers)

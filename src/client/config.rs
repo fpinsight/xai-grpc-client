@@ -12,7 +12,8 @@ use crate::{
 };
 use secrecy::{ExposeSecret, SecretString};
 use std::time::Duration;
-use tonic::transport::{Channel, Endpoint};
+use tonic::transport::{Channel, ClientTlsConfig, Endpoint};
+use url::Url;
 
 /// Configuration for the Grok API client.
 ///
@@ -295,6 +296,11 @@ impl GrokClient {
     /// Use this method when you need to customize the endpoint, model,
     /// timeout, or provide the API key programmatically.
     ///
+    /// This method automatically configures TLS based on enabled features:
+    /// - `tls-webpki-roots`: Uses Mozilla's root certificates (default)
+    /// - `tls-native-roots`: Uses system native certificate store
+    /// - Both features can be enabled simultaneously for fallback behavior
+    ///
     /// # Arguments
     ///
     /// * `config` - Configuration for the client
@@ -331,9 +337,45 @@ impl GrokClient {
             return Err(GrokError::Config("API key is empty".to_string()));
         }
 
-        // Configure TLS for HTTPS (tls-webpki-roots feature provides root certs)
-        let tls_config = tonic::transport::ClientTlsConfig::new();
+        // Build channel from config
+        let channel = Self::build_channel_from_config(&config).await?;
 
+        // Reuse with_channel logic
+        let mut client = Self::with_channel(channel, config.api_key.clone());
+        client.config = config; // Update config with provided values
+        Ok(client)
+    }
+
+    /// Helper method to build a channel from GrokConfig.
+    ///
+    /// This method handles automatic TLS configuration based on enabled features
+    /// and extracts the domain name from the endpoint URL for proper validation.
+    async fn build_channel_from_config(config: &GrokConfig) -> Result<Channel> {
+        // Parse the endpoint URL to extract the domain name for TLS validation
+        let url = Url::parse(&config.endpoint)
+            .map_err(|e| GrokError::Config(format!("Invalid endpoint URL: {e}")))?;
+        let domain_name = url.host_str().ok_or_else(|| {
+            GrokError::Config("Endpoint URL does not contain a valid host".to_string())
+        })?;
+
+        // Build TLS config with automatic root certificate selection
+        let mut tls_config = ClientTlsConfig::new();
+
+        // Note: If both features are enabled, both root stores will be used (fallback behavior)
+        #[cfg(feature = "tls-webpki-roots")]
+        {
+            tls_config = tls_config.with_webpki_roots();
+        }
+
+        #[cfg(feature = "tls-native-roots")]
+        {
+            tls_config = tls_config.with_native_roots();
+        }
+
+        // Set domain name for TLS validation
+        let tls_config = tls_config.domain_name(domain_name);
+
+        // Build endpoint with optimized connection settings
         let endpoint = Endpoint::from_shared(config.endpoint.clone())?
             .timeout(config.timeout)
             .tcp_keepalive(Some(Duration::from_secs(30)))
@@ -341,31 +383,8 @@ impl GrokClient {
             .keep_alive_timeout(Duration::from_secs(10))
             .tls_config(tls_config)?;
 
-        let channel = endpoint.connect().await?;
-
-        let interceptor = AuthInterceptor::new(config.api_key.clone());
-        let inner = ChatClient::with_interceptor(channel.clone(), interceptor.clone());
-        let models_client = ModelsClient::with_interceptor(channel.clone(), interceptor.clone());
-        let embedder_client =
-            EmbedderClient::with_interceptor(channel.clone(), interceptor.clone());
-        let tokenize_client =
-            TokenizeClient::with_interceptor(channel.clone(), interceptor.clone());
-        let auth_client = AuthClient::with_interceptor(channel.clone(), interceptor.clone());
-        let sample_client = SampleClient::with_interceptor(channel.clone(), interceptor.clone());
-        let image_client = ImageClient::with_interceptor(channel.clone(), interceptor.clone());
-        let documents_client = DocumentsClient::with_interceptor(channel, interceptor);
-
-        Ok(Self {
-            inner,
-            models_client,
-            embedder_client,
-            tokenize_client,
-            auth_client,
-            sample_client,
-            image_client,
-            documents_client,
-            config,
-        })
+        // Connect and return channel
+        endpoint.connect().await.map_err(Into::into)
     }
 
     /// Tests the connection by sending a simple request to the API.
