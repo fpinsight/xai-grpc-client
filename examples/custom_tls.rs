@@ -28,16 +28,15 @@ use xai_grpc_client::Certificate;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get API key from environment
-    let api_key = std::env::var("XAI_API_KEY")
-        .expect("XAI_API_KEY environment variable must be set");
+    let api_key =
+        std::env::var("XAI_API_KEY").expect("XAI_API_KEY environment variable must be set");
     let api_key = SecretString::from(api_key);
 
     println!("Example 1: Custom TLS with explicit domain validation");
     println!("=====================================================\n");
 
     // Build a custom TLS configuration with explicit domain validation
-    let tls_config = ClientTlsConfig::new()
-        .domain_name("api.x.ai"); // Explicitly validate against this domain
+    let tls_config = ClientTlsConfig::new().domain_name("api.x.ai"); // Explicitly validate against this domain
 
     let channel = Channel::from_static("https://api.x.ai")
         .timeout(Duration::from_secs(120))
