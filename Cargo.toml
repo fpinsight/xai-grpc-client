@@ -51,8 +51,8 @@ secrecy = "0.10"
 # Encoding
 base64 = "0.22"
 
-# URL parsing
-url = "2.5"
+# URL parsing (pinned to 2.5.0 for MSRV 1.82 compatibility)
+url = "=2.5.0"
 
 [features]
 # Default to webpki-roots (works in most environments including containers)
