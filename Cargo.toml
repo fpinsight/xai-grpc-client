@@ -12,7 +12,7 @@ documentation = "https://docs.rs/xai-grpc-client"
 keywords = ["xai", "grok", "grpc", "llm", "ai"]
 categories = ["api-bindings", "asynchronous", "network-programming"]
 readme = "README.md"
-rust-version = "1.82.0"
+rust-version = "1.83.0"
 include = [
     "src/**/*",
     "proto/**/*",
@@ -51,8 +51,8 @@ secrecy = "0.10"
 # Encoding
 base64 = "0.22"
 
-# URL parsing (pinned to 2.5.0 for MSRV 1.82 compatibility)
-url = "=2.5.0"
+# URL parsing
+url = "2.5"
 
 [features]
 # Default to webpki-roots (works in most environments including containers)
