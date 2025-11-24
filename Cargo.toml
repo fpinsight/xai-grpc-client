@@ -58,14 +58,17 @@ url = "2.5"
 # Default to webpki-roots (works in most environments including containers)
 default = ["tls-webpki-roots"]
 
-# TLS root certificate selection - choose ONE of these
+# TLS root certificate selection
+# Note: The 'default' feature enables tls-webpki-roots automatically.
+# To use a different TLS backend, build with --no-default-features and explicitly select ONE of:
+#
 # webpki-roots: Mozilla's root certificates (recommended for containers/distroless)
 tls-webpki-roots = ["tonic/tls-webpki-roots"]
 
-# native-roots: Use the system's native certificate store (recommended for development)
+# native-roots: Use the system's native certificate store (recommended for development/desktop)
 tls-native-roots = ["tonic/tls-native-roots"]
 
-# Support for both root stores simultaneously (use if unsure)
+# tls-roots: Enable both root stores with automatic fallback (use if unsure which to choose)
 tls-roots = ["tls-webpki-roots", "tls-native-roots"]
 
 [build-dependencies]
