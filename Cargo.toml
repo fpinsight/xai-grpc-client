@@ -1,9 +1,10 @@
 [package]
 name = "xai-grpc-client"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["Thierry Bourrillon <thierry.bourrillon@fpinsight.com>"]
 license = "MIT OR Apache-2.0"
+
 description = "Feature-complete gRPC client for xAI's Grok API with streaming, tools, multimodal support"
 repository = "https://github.com/fpinsight/xai-grpc-client"
 homepage = "https://github.com/fpinsight/xai-grpc-client"
@@ -11,7 +12,7 @@ documentation = "https://docs.rs/xai-grpc-client"
 keywords = ["xai", "grok", "grpc", "llm", "ai"]
 categories = ["api-bindings", "asynchronous", "network-programming"]
 readme = "README.md"
-rust-version = "1.82.0"
+rust-version = "1.83.0"
 include = [
     "src/**/*",
     "proto/**/*",
@@ -27,7 +28,7 @@ include = [
 
 [dependencies]
 # gRPC and protobuf
-tonic = { version = "0.14", features = ["transport", "tls-webpki-roots"] }
+tonic = { version = "0.14", default-features = false, features = ["transport", "codegen"] }
 tonic-prost = "0.14"
 prost = "0.14"
 prost-types = "0.14"
@@ -47,20 +48,28 @@ serde_json = "1.0"
 # Security
 secrecy = "0.10"
 
-# TLS - optional dependency to control crypto provider selection
-rustls = { version = "0.23", optional = true }
-
 # Encoding
 base64 = "0.22"
 
+# URL parsing
+url = "2.5"
+
 [features]
-default = ["ring-crypto"]
+# Default to webpki-roots (works in most environments including containers)
+default = ["tls-webpki-roots"]
 
-# Feature to select the `ring` crypto provider (default)
-ring-crypto = ["rustls/ring"]
+# TLS root certificate selection
+# Note: The 'default' feature enables tls-webpki-roots automatically.
+# To use a different TLS backend, build with --no-default-features and explicitly select ONE of:
+#
+# webpki-roots: Mozilla's root certificates (recommended for containers/distroless)
+tls-webpki-roots = ["tonic/tls-webpki-roots"]
 
-# Feature to select the `aws-lc-rs` crypto provider
-aws-lc-rs-crypto = ["rustls/aws-lc-rs"]
+# native-roots: Use the system's native certificate store (recommended for development/desktop)
+tls-native-roots = ["tonic/tls-native-roots"]
+
+# tls-roots: Enable both root stores with automatic fallback (use if unsure which to choose)
+tls-roots = ["tls-webpki-roots", "tls-native-roots"]
 
 [build-dependencies]
 tonic-prost-build = "0.14"
@@ -96,6 +105,10 @@ path = "examples/embeddings.rs"
 [[example]]
 name = "tokenize"
 path = "examples/tokenize.rs"
+
+[[example]]
+name = "custom_tls"
+path = "examples/custom_tls.rs"
 
 [package.metadata.docs.rs]
 all-features = true
