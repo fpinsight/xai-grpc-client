@@ -36,6 +36,16 @@ jobs:
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
 
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          if command -v sha256sum &> /dev/null; then
+            echo "hash=$(sha256sum Cargo.lock | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          else
+            echo "hash=$(shasum -a 256 Cargo.lock | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
       - name: Cache cargo registry and build artifacts
         uses: actions/cache@v4
         with:
@@ -43,7 +53,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-${{ steps.cache-key.outputs.hash }}
           restore-keys: |
             ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-
 
@@ -107,6 +117,16 @@ jobs:
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
 
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          if command -v sha256sum &> /dev/null; then
+            echo "hash=$(sha256sum Cargo.lock | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          else
+            echo "hash=$(shasum -a 256 Cargo.lock | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
       - name: Cache cargo registry and build artifacts
         uses: actions/cache@v4
         with:
@@ -114,7 +134,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-rust-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-rust-stable-cargo-${{ steps.cache-key.outputs.hash }}
           restore-keys: |
             ${{ runner.os }}-rust-stable-cargo-
 
@@ -138,6 +158,16 @@ jobs:
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
 
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          if command -v sha256sum &> /dev/null; then
+            echo "hash=$(sha256sum Cargo.lock | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          else
+            echo "hash=$(shasum -a 256 Cargo.lock | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
       - name: Cache cargo registry and build artifacts
         uses: actions/cache@v4
         with:
@@ -145,7 +175,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-rust-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-rust-stable-cargo-${{ steps.cache-key.outputs.hash }}
           restore-keys: |
             ${{ runner.os }}-rust-stable-cargo-
 
