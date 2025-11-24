@@ -20,6 +20,16 @@ use url::Url;
 /// This struct contains all the settings needed to connect to the xAI Grok API,
 /// including the endpoint URL, API key, default model, and timeout settings.
 ///
+/// # TLS and Endpoint Requirements
+///
+/// When using [`GrokClient::new()`](crate::GrokClient::new) with this config,
+/// TLS is automatically enabled and the endpoint must be an HTTPS URL.
+/// The domain name is extracted from the endpoint for TLS certificate validation.
+///
+/// For non-TLS connections or custom transport configurations, use
+/// [`GrokClient::with_channel()`](crate::GrokClient::with_channel) with a
+/// manually constructed [`Channel`](tonic::transport::Channel).
+///
 /// # Examples
 ///
 /// ```no_run
@@ -37,6 +47,9 @@ use url::Url;
 #[derive(Clone)]
 pub struct GrokConfig {
     /// The gRPC endpoint URL (default: <https://api.x.ai>).
+    ///
+    /// Must be a valid HTTPS URL when used with [`GrokClient::new()`](crate::GrokClient::new).
+    /// The domain name is extracted for TLS certificate validation.
     pub endpoint: String,
 
     /// API key for authentication (stored securely using SecretString).
