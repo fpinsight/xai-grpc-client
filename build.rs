@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let proto_root = PathBuf::from("proto");
+    let proto_root = PathBuf::from("xai-proto/proto");
     let chat_proto = proto_root.join("xai/api/v1/chat.proto");
     let models_proto = proto_root.join("xai/api/v1/models.proto");
     let embed_proto = proto_root.join("xai/api/v1/embed.proto");

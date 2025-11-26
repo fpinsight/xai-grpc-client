@@ -627,11 +627,18 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ### Development Setup
 
 ```bash
-git clone https://github.com/fpinsight/xai-grpc-client
+# Clone the repository with submodules
+git clone --recursive https://github.com/fpinsight/xai-grpc-client
 cd xai-grpc-client
+
+# Or if you already cloned without --recursive:
+git submodule update --init --recursive
+
 cargo build
 cargo test
 ```
+
+**Note:** This project uses a Git submodule for proto definitions. The `xai-proto` submodule must be initialized before building.
 
 ## License
 

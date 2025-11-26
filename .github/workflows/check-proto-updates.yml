@@ -1,0 +1,38 @@
+name: Check for Proto Updates
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight
+  workflow_dispatch:
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Pull latest changes in submodule
+        run: |
+          git submodule update --remote
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [[ -n $(git status -s) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update xai-proto submodule"
+          title: "Update xai-proto submodule to latest version"
+          body: |
+            The `xai-proto` submodule has been updated to the latest version.
+          branch: "chore/update-xai-proto"
+          labels: "dependencies"
