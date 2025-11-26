@@ -154,6 +154,7 @@ pub use embedding::{
 pub use error::{GrokError, Result};
 pub use image::{GeneratedImage, ImageFormat, ImageGenerationRequest, ImageGenerationResponse};
 pub use models::{EmbeddingModel, ImageGenerationModel, LanguageModel, Modality};
+pub use proto::IncludeOption;
 pub use request::{
     ChatRequest, CompletionOptions, ContentPart, ImageDetail, Message, MessageContent,
     ReasoningEffort, ResponseFormat, SearchConfig, SearchMode, SearchSource,

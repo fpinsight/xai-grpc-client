@@ -4,6 +4,7 @@
 //! with support for multimodal inputs, tool calling, advanced sampling parameters,
 //! and more.
 
+use crate::proto::IncludeOption;
 use crate::tools::{Tool, ToolChoice};
 use serde_json::Value as JsonValue;
 
@@ -100,6 +101,8 @@ pub struct ChatRequest {
     parallel_tool_calls: Option<bool>,
     previous_response_id: Option<String>,
     store_messages: bool,
+    max_turns: Option<i32>,
+    include: Vec<IncludeOption>,
 }
 
 /// A message in a chat conversation.
@@ -124,7 +127,7 @@ pub enum MessageContent {
     MultiModal(Vec<ContentPart>),
 }
 
-/// A part of a multimodal message (text or image).
+/// A part of a multimodal message (text, image, or file attachment).
 #[derive(Clone, Debug)]
 pub enum ContentPart {
     /// Text content.
@@ -135,6 +138,11 @@ pub enum ContentPart {
         url: String,
         /// Level of detail for image processing.
         detail: Option<ImageDetail>,
+    },
+    /// File attachment by file ID.
+    File {
+        /// File ID from the Files API.
+        file_id: String,
     },
 }
 
@@ -377,6 +385,38 @@ impl ChatRequest {
         self
     }
 
+    /// Set the maximum number of agentic tool calling turns.
+    /// Useful for controlling how many iterations the model can take when using tools.
+    pub fn with_max_turns(mut self, max_turns: i32) -> Self {
+        self.max_turns = Some(max_turns);
+        self
+    }
+
+    /// Add an include option to control what optional fields are returned in the response.
+    /// Can be called multiple times to include multiple options.
+    pub fn add_include_option(mut self, option: IncludeOption) -> Self {
+        self.include.push(option);
+        self
+    }
+
+    /// Set all include options at once.
+    pub fn with_include_options(mut self, options: Vec<IncludeOption>) -> Self {
+        self.include = options;
+        self
+    }
+
+    /// Convenience method to attach a file to the message.
+    pub fn user_with_file(mut self, text: impl Into<String>, file_id: impl Into<String>) -> Self {
+        self.messages
+            .push(Message::User(MessageContent::MultiModal(vec![
+                ContentPart::Text(text.into()),
+                ContentPart::File {
+                    file_id: file_id.into(),
+                },
+            ])));
+        self
+    }
+
     // Getters for conversion
     pub fn messages(&self) -> &[Message] {
         &self.messages
@@ -456,6 +496,14 @@ impl ChatRequest {
 
     pub fn store_messages(&self) -> bool {
         self.store_messages
+    }
+
+    pub fn max_turns(&self) -> Option<i32> {
+        self.max_turns
+    }
+
+    pub fn include_options(&self) -> &[IncludeOption] {
+        &self.include
     }
 
     /// Create a ChatRequest from a list of messages with optional configuration
