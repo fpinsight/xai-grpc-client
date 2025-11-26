@@ -111,6 +111,20 @@ impl GrokClient {
 
         proto_req.store_messages = request.store_messages();
 
+        // Add max_turns if specified
+        if let Some(max_turns) = request.max_turns() {
+            proto_req.max_turns = Some(max_turns);
+        }
+
+        // Add include options
+        if !request.include_options().is_empty() {
+            proto_req.include = request
+                .include_options()
+                .iter()
+                .map(|opt| *opt as i32)
+                .collect();
+        }
+
         Ok(proto_req)
     }
 
@@ -169,6 +183,11 @@ impl GrokClient {
                             )),
                         }
                     }
+                    ContentPart::File { file_id } => proto::Content {
+                        content: Some(proto::content::Content::File(proto::FileContent {
+                            file_id: file_id.clone(),
+                        })),
+                    },
                 })
                 .collect(),
         }

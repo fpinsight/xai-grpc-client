@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-11-26
+
+### Added
+- ✨ **Agentic Tool Calling Control**: `max_turns` parameter to limit multi-turn tool calling iterations
+  - New method: `ChatRequest::with_max_turns(i32)`
+  - Prevents runaway agentic loops by setting a maximum number of tool calling rounds
+- 📎 **File Attachment Support**: Upload and attach files to chat messages
+  - New `ContentPart::File { file_id }` variant for file attachments
+  - New method: `ChatRequest::user_with_file(text, file_id)`
+  - Works with files uploaded via the Files API
+- 🎛️ **Include Options**: Control optional response fields
+  - New `IncludeOption` enum exported for public use
+  - Options: web search output, X search output, code execution, collections search, document search, MCP tool output, inline citations
+  - New methods:
+    - `ChatRequest::add_include_option(IncludeOption)` - Add single option
+    - `ChatRequest::with_include_options(Vec<IncludeOption>)` - Set all options at once
+  - Useful for debugging and accessing tool outputs
+
+### Changed
+- 🔄 **Migrated to Git Submodule**: Proto definitions now tracked via `xai-org/xai-proto` submodule
+  - Ensures proto files stay in sync with official xAI repository
+  - Reduces maintenance burden
+  - Added automated workflow to check for proto updates daily
+- 📦 **Updated proto path**: Changed from `proto/` to `xai-proto/proto/` in build configuration
+- 🚀 **All CI/CD workflows updated** to initialize submodules automatically
+
+### Infrastructure
+- 🤖 **Automated Proto Update Checking**: Daily workflow checks for upstream proto changes
+  - Automatically creates PRs when updates are available
+  - Keeps the client current with latest xAI API features
+
+### Developer Notes
+- Implements features from `xai-org/xai-proto` PRs:
+  - #18: Tool outputs and inline citations
+  - #17: `max_turns` for agentic conversations
+  - #16: File attachment support
+- All tests passing (98 tests)
+- No breaking changes to existing API
+
+### Migration Guide
+
+**Cloning the repository:**
+
+```bash
+# New clones need --recursive flag
+git clone --recursive https://github.com/fpinsight/xai-grpc-client
+
+# Existing clones need submodule initialization
+git submodule update --init --recursive
+```
+
+**Using new features:**
+
+```rust
+use xai_grpc_client::{ChatRequest, IncludeOption};
+
+// Control agentic tool calling iterations
+let request = ChatRequest::new()
+    .user_message("Research this topic")
+    .add_tool(my_tool)
+    .with_max_turns(5);  // Limit to 5 tool calling rounds
+
+// Attach a file to a message
+let request = ChatRequest::new()
+    .user_with_file("Analyze this document", "file-abc123");
+
+// Include tool outputs in response
+let request = ChatRequest::new()
+    .user_message("Search for recent news")
+    .add_include_option(IncludeOption::WebSearchCallOutput)
+    .add_include_option(IncludeOption::InlineCitations);
+```
+
 ## [0.3.0] - 2025-11-22
 
 ### Breaking Changes
@@ -213,7 +286,8 @@ This release achieves **100% (19/19)** API coverage - complete implementation of
 - API keys stored using `secrecy::Secret` to prevent accidental exposure
 - TLS support for secure gRPC connections
 
-[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.1.0...v0.2.0

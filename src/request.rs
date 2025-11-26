@@ -4,6 +4,7 @@
 //! with support for multimodal inputs, tool calling, advanced sampling parameters,
 //! and more.
 
+use crate::proto::IncludeOption;
 use crate::tools::{Tool, ToolChoice};
 use serde_json::Value as JsonValue;
 
@@ -100,6 +101,8 @@ pub struct ChatRequest {
     parallel_tool_calls: Option<bool>,
     previous_response_id: Option<String>,
     store_messages: bool,
+    max_turns: Option<i32>,
+    include: Vec<IncludeOption>,
 }
 
 /// A message in a chat conversation.
@@ -124,7 +127,7 @@ pub enum MessageContent {
     MultiModal(Vec<ContentPart>),
 }
 
-/// A part of a multimodal message (text or image).
+/// A part of a multimodal message (text, image, or file attachment).
 #[derive(Clone, Debug)]
 pub enum ContentPart {
     /// Text content.
@@ -135,6 +138,11 @@ pub enum ContentPart {
         url: String,
         /// Level of detail for image processing.
         detail: Option<ImageDetail>,
+    },
+    /// File attachment by file ID.
+    File {
+        /// File ID from the Files API.
+        file_id: String,
     },
 }
 
@@ -377,6 +385,45 @@ impl ChatRequest {
         self
     }
 
+    /// Set the maximum number of agentic tool calling turns.
+    /// Useful for controlling how many iterations the model can take when using tools.
+    ///
+    /// # Panics
+    /// Panics if `max_turns` is less than 1.
+    pub fn with_max_turns(mut self, max_turns: i32) -> Self {
+        assert!(
+            max_turns >= 1,
+            "max_turns must be at least 1, got {max_turns}"
+        );
+        self.max_turns = Some(max_turns);
+        self
+    }
+
+    /// Add an include option to control what optional fields are returned in the response.
+    /// Can be called multiple times to include multiple options.
+    pub fn add_include_option(mut self, option: IncludeOption) -> Self {
+        self.include.push(option);
+        self
+    }
+
+    /// Set all include options at once.
+    pub fn with_include_options(mut self, options: Vec<IncludeOption>) -> Self {
+        self.include = options;
+        self
+    }
+
+    /// Convenience method to attach a file to the message.
+    pub fn user_with_file(mut self, text: impl Into<String>, file_id: impl Into<String>) -> Self {
+        self.messages
+            .push(Message::User(MessageContent::MultiModal(vec![
+                ContentPart::Text(text.into()),
+                ContentPart::File {
+                    file_id: file_id.into(),
+                },
+            ])));
+        self
+    }
+
     // Getters for conversion
     pub fn messages(&self) -> &[Message] {
         &self.messages
@@ -456,6 +503,14 @@ impl ChatRequest {
 
     pub fn store_messages(&self) -> bool {
         self.store_messages
+    }
+
+    pub fn max_turns(&self) -> Option<i32> {
+        self.max_turns
+    }
+
+    pub fn include_options(&self) -> &[IncludeOption] {
+        &self.include
     }
 
     /// Create a ChatRequest from a list of messages with optional configuration
@@ -634,5 +689,138 @@ mod tests {
             request.response_format(),
             Some(ResponseFormat::JsonObject)
         ));
+    }
+
+    // Tests for v0.4.0 features
+    #[test]
+    fn test_max_turns() {
+        let request = ChatRequest::new()
+            .user_message("Research this topic")
+            .with_max_turns(5);
+
+        assert_eq!(request.max_turns(), Some(5));
+    }
+
+    #[test]
+    fn test_max_turns_single_turn() {
+        let request = ChatRequest::new()
+            .user_message("Single turn")
+            .with_max_turns(1);
+
+        assert_eq!(request.max_turns(), Some(1));
+    }
+
+    #[test]
+    #[should_panic(expected = "max_turns must be at least 1")]
+    fn test_max_turns_validation_zero() {
+        ChatRequest::new().user_message("Test").with_max_turns(0);
+    }
+
+    #[test]
+    #[should_panic(expected = "max_turns must be at least 1")]
+    fn test_max_turns_validation_negative() {
+        ChatRequest::new().user_message("Test").with_max_turns(-1);
+    }
+
+    #[test]
+    fn test_include_options_single() {
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .add_include_option(IncludeOption::WebSearchCallOutput);
+
+        assert_eq!(request.include_options().len(), 1);
+    }
+
+    #[test]
+    fn test_include_options_multiple() {
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .add_include_option(IncludeOption::WebSearchCallOutput)
+            .add_include_option(IncludeOption::InlineCitations)
+            .add_include_option(IncludeOption::XSearchCallOutput);
+
+        assert_eq!(request.include_options().len(), 3);
+    }
+
+    #[test]
+    fn test_with_include_options() {
+        let options = vec![
+            IncludeOption::WebSearchCallOutput,
+            IncludeOption::CodeExecutionCallOutput,
+            IncludeOption::InlineCitations,
+        ];
+
+        let request = ChatRequest::new()
+            .user_message("Test")
+            .with_include_options(options);
+
+        assert_eq!(request.include_options().len(), 3);
+    }
+
+    #[test]
+    fn test_user_with_file() {
+        let request = ChatRequest::new().user_with_file("Analyze this document", "file-abc123");
+
+        assert_eq!(request.messages().len(), 1);
+        match &request.messages()[0] {
+            Message::User(MessageContent::MultiModal(parts)) => {
+                assert_eq!(parts.len(), 2);
+                match &parts[0] {
+                    ContentPart::Text(text) => assert_eq!(text, "Analyze this document"),
+                    _ => panic!("Expected text part"),
+                }
+                match &parts[1] {
+                    ContentPart::File { file_id } => assert_eq!(file_id, "file-abc123"),
+                    _ => panic!("Expected file part"),
+                }
+            }
+            _ => panic!("Expected multimodal user message"),
+        }
+    }
+
+    #[test]
+    fn test_file_content_part() {
+        let file_part = ContentPart::File {
+            file_id: "file-xyz789".to_string(),
+        };
+
+        match file_part {
+            ContentPart::File { file_id } => assert_eq!(file_id, "file-xyz789"),
+            _ => panic!("Expected file content part"),
+        }
+    }
+
+    #[test]
+    fn test_multimodal_with_file_and_image() {
+        let request = ChatRequest::new().user_multimodal(vec![
+            ContentPart::Text("Compare these".to_string()),
+            ContentPart::ImageUrl {
+                url: "https://example.com/image1.jpg".to_string(),
+                detail: Some(ImageDetail::High),
+            },
+            ContentPart::File {
+                file_id: "file-doc123".to_string(),
+            },
+        ]);
+
+        assert_eq!(request.messages().len(), 1);
+        match &request.messages()[0] {
+            Message::User(MessageContent::MultiModal(parts)) => {
+                assert_eq!(parts.len(), 3);
+            }
+            _ => panic!("Expected multimodal user message"),
+        }
+    }
+
+    #[test]
+    fn test_combined_new_features() {
+        let request = ChatRequest::new()
+            .user_message("Research and analyze")
+            .with_max_turns(10)
+            .add_include_option(IncludeOption::WebSearchCallOutput)
+            .add_include_option(IncludeOption::InlineCitations);
+
+        assert_eq!(request.max_turns(), Some(10));
+        assert_eq!(request.include_options().len(), 2);
     }
 }

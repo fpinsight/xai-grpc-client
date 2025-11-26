@@ -1,0 +1,7 @@
+# Git attributes for better submodule handling
+
+# Ensure submodule changes are visible in diffs
+xai-proto -diff
+
+# Track submodule commits properly
+xai-proto merge=binary

@@ -22,6 +22,8 @@ jobs:
         rust: [stable, beta, 1.83.0]  # MSRV is 1.83.0
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Install protobuf compiler
         uses: arduino/setup-protoc@v3
@@ -71,6 +73,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Install protobuf compiler
         uses: arduino/setup-protoc@v3
@@ -103,6 +107,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Install protobuf compiler
         uses: arduino/setup-protoc@v3
@@ -146,6 +152,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Install protobuf compiler
         uses: arduino/setup-protoc@v3
@@ -189,6 +197,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Install protobuf compiler
         uses: arduino/setup-protoc@v3

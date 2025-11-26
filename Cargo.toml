@@ -1,6 +1,6 @@
 [package]
 name = "xai-grpc-client"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Thierry Bourrillon <thierry.bourrillon@fpinsight.com>"]
 license = "MIT OR Apache-2.0"
@@ -15,7 +15,7 @@ readme = "README.md"
 rust-version = "1.83.0"
 include = [
     "src/**/*",
-    "proto/**/*",
+    "xai-proto/**/*",
     "build.rs",
     "Cargo.toml",
     "README.md",
