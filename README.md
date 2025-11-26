@@ -32,7 +32,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-xai-grpc-client = "0.3"
+xai-grpc-client = "0.4"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 ```
@@ -44,19 +44,19 @@ The crate provides flexible TLS configuration through feature flags for root cer
 **Default (webpki-roots - recommended for containers):**
 ```toml
 [dependencies]
-xai-grpc-client = "0.3"
+xai-grpc-client = "0.4"
 ```
 
 **Using native system roots (recommended for development):**
 ```toml
 [dependencies]
-xai-grpc-client = { version = "0.3", features = ["tls-native-roots"], default-features = false }
+xai-grpc-client = { version = "0.4", features = ["tls-native-roots"], default-features = false }
 ```
 
 **Using both root stores (if unsure):**
 ```toml
 [dependencies]
-xai-grpc-client = { version = "0.3", features = ["tls-roots"], default-features = false }
+xai-grpc-client = { version = "0.4", features = ["tls-roots"], default-features = false }
 ```
 
 **Available features:**
