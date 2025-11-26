@@ -393,8 +393,7 @@ impl ChatRequest {
     pub fn with_max_turns(mut self, max_turns: i32) -> Self {
         assert!(
             max_turns >= 1,
-            "max_turns must be at least 1, got {}",
-            max_turns
+            "max_turns must be at least 1, got {max_turns}"
         );
         self.max_turns = Some(max_turns);
         self
