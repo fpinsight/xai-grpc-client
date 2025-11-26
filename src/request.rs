@@ -391,7 +391,11 @@ impl ChatRequest {
     /// # Panics
     /// Panics if `max_turns` is less than 1.
     pub fn with_max_turns(mut self, max_turns: i32) -> Self {
-        assert!(max_turns >= 1, "max_turns must be at least 1, got {}", max_turns);
+        assert!(
+            max_turns >= 1,
+            "max_turns must be at least 1, got {}",
+            max_turns
+        );
         self.max_turns = Some(max_turns);
         self
     }
@@ -710,17 +714,13 @@ mod tests {
     #[test]
     #[should_panic(expected = "max_turns must be at least 1")]
     fn test_max_turns_validation_zero() {
-        ChatRequest::new()
-            .user_message("Test")
-            .with_max_turns(0);
+        ChatRequest::new().user_message("Test").with_max_turns(0);
     }
 
     #[test]
     #[should_panic(expected = "max_turns must be at least 1")]
     fn test_max_turns_validation_negative() {
-        ChatRequest::new()
-            .user_message("Test")
-            .with_max_turns(-1);
+        ChatRequest::new().user_message("Test").with_max_turns(-1);
     }
 
     #[test]
@@ -760,8 +760,7 @@ mod tests {
 
     #[test]
     fn test_user_with_file() {
-        let request = ChatRequest::new()
-            .user_with_file("Analyze this document", "file-abc123");
+        let request = ChatRequest::new().user_with_file("Analyze this document", "file-abc123");
 
         assert_eq!(request.messages().len(), 1);
         match &request.messages()[0] {
