@@ -110,6 +110,7 @@ impl GrokClient {
         }
 
         proto_req.store_messages = request.store_messages();
+        proto_req.use_encrypted_content = request.use_encrypted_content();
 
         // Add max_turns if specified
         if let Some(max_turns) = request.max_turns() {
@@ -295,6 +296,18 @@ impl GrokClient {
             .map(|delta| delta.reasoning_content.clone())
             .filter(|s| !s.is_empty()); // Filter out empty strings
 
+        // Extract tool calls from delta
+        let tool_calls = output
+            .and_then(|output| output.delta.as_ref())
+            .map(|delta| {
+                delta
+                    .tool_calls
+                    .iter()
+                    .filter_map(|tc| ToolCall::from_proto(tc.clone()))
+                    .collect()
+            })
+            .unwrap_or_default();
+
         // Check finish_reason - only set if it's not REASON_INVALID (0)
         let finish_reason = output
             .map(|output| output.finish_reason)
@@ -311,11 +324,41 @@ impl GrokClient {
             })
             .unwrap_or_default();
 
+        // Extract logprobs if present
+        let logprobs = output.and_then(|output| {
+            output.logprobs.as_ref().map(|lp| LogProbs {
+                content: lp
+                    .content
+                    .iter()
+                    .map(|log_prob| LogProb {
+                        token: log_prob.token.clone(),
+                        logprob: log_prob.logprob,
+                        bytes: log_prob.bytes.clone(),
+                        top_logprobs: log_prob
+                            .top_logprobs
+                            .iter()
+                            .map(|top| TopLogProb {
+                                token: top.token.clone(),
+                                logprob: top.logprob,
+                                bytes: top.bytes.clone(),
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            })
+        });
+
+        // Extract citations (typically only in the last chunk)
+        let citations = chunk.citations;
+
         Ok(ChatChunk {
             delta,
             finish_reason,
             cumulative_usage,
             reasoning_delta,
+            tool_calls,
+            logprobs,
+            citations,
         })
     }
 

@@ -101,6 +101,7 @@ pub struct ChatRequest {
     parallel_tool_calls: Option<bool>,
     previous_response_id: Option<String>,
     store_messages: bool,
+    use_encrypted_content: bool,
     max_turns: Option<i32>,
     include: Vec<IncludeOption>,
 }
@@ -385,6 +386,11 @@ impl ChatRequest {
         self
     }
 
+    pub fn with_use_encrypted_content(mut self, use_encrypted: bool) -> Self {
+        self.use_encrypted_content = use_encrypted;
+        self
+    }
+
     /// Set the maximum number of agentic tool calling turns.
     /// Useful for controlling how many iterations the model can take when using tools.
     ///
@@ -503,6 +509,10 @@ impl ChatRequest {
 
     pub fn store_messages(&self) -> bool {
         self.store_messages
+    }
+
+    pub fn use_encrypted_content(&self) -> bool {
+        self.use_encrypted_content
     }
 
     pub fn max_turns(&self) -> Option<i32> {

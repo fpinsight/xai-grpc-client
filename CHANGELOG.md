@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-11-30
+
+### Fixed
+- 🐛 **Critical: Fixed streaming tool calls not being extracted** (#12)
+  - Tool calls are now properly extracted from streaming responses
+  - Fixes application hangs when using `stream_chat()` with tools
+  - Added `tool_calls: Vec<ToolCall>` field to `ChatChunk`
+  - Streaming responses now match non-streaming API completeness
+
+### Added
+- ✨ **Streaming log probabilities support**
+  - Added `logprobs: Option<LogProbs>` field to `ChatChunk`
+  - Token-level probability information now available during streaming
+  - Enables real-time confidence analysis of generated tokens
+- 📚 **Streaming citations support**
+  - Added `citations: Vec<String>` field to `ChatChunk`
+  - Citations now accessible in streaming mode (typically in last chunk)
+  - Matches non-streaming API citation support
+- 🔐 **Encrypted reasoning trace support**
+  - Added `use_encrypted_content: bool` field to `ChatRequest`
+  - New method: `ChatRequest::with_use_encrypted_content(bool)`
+  - Enables xAI's reasoning trace rehydration optimization
+  - Faster and cheaper multi-turn reasoning conversations when used with `store_messages` and `previous_response_id`
+
+### Changed
+- 📊 **Enhanced `ChatChunk` structure** to match `ChatResponse` completeness
+  - Before: Only 4 fields (delta, finish_reason, usage, reasoning_delta)
+  - After: 7 fields (added tool_calls, logprobs, citations)
+  - Backward compatible - new fields are empty by default
+
+### Developer Notes
+- All tests passing (109 tests)
+- No breaking changes to existing API
+- New fields are backward compatible with default empty values
+
 ## [0.4.0] - 2025-11-26
 
 ### Added
@@ -286,7 +321,8 @@ This release achieves **100% (19/19)** API coverage - complete implementation of
 - API keys stored using `secrecy::Secret` to prevent accidental exposure
 - TLS support for secure gRPC connections
 
-[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.0...v0.2.1
