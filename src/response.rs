@@ -79,6 +79,12 @@ pub struct ChatChunk {
     pub cumulative_usage: TokenUsage,
     /// Reasoning trace delta (for streaming).
     pub reasoning_delta: Option<String>,
+    /// Tool calls emitted in this chunk (streaming tool calls).
+    pub tool_calls: Vec<ToolCall>,
+    /// Log probabilities for tokens in this chunk.
+    pub logprobs: Option<LogProbs>,
+    /// Citations used by the model (typically only in the last chunk).
+    pub citations: Vec<String>,
 }
 
 /// Token usage statistics for a completion.
@@ -184,11 +190,17 @@ mod tests {
                 total_tokens: 6,
             },
             reasoning_delta: None,
+            tool_calls: vec![],
+            logprobs: None,
+            citations: vec![],
         };
 
         assert_eq!(chunk.delta, "Hello");
         assert!(chunk.finish_reason.is_none());
         assert_eq!(chunk.cumulative_usage.total_tokens, 6);
+        assert_eq!(chunk.tool_calls.len(), 0);
+        assert!(chunk.logprobs.is_none());
+        assert_eq!(chunk.citations.len(), 0);
     }
 
     #[test]
