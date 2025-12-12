@@ -108,7 +108,8 @@ pub struct ChatRequest {
 
 /// A message in a chat conversation.
 ///
-/// Messages can be from the system (instructions), user (input), or assistant (AI response).
+/// Messages can be from the system (instructions), user (input), assistant (AI response),
+/// or tool (result from a tool execution).
 #[derive(Clone, Debug)]
 pub enum Message {
     /// System message providing instructions or context to the model.
@@ -117,6 +118,21 @@ pub enum Message {
     User(MessageContent),
     /// Assistant message containing the AI's previous response.
     Assistant(String),
+    /// Tool result message containing the output from a tool execution.
+    ///
+    /// # Important: Message Order
+    ///
+    /// The xAI gRPC API matches tool results to tool calls by **message order**, not by ID.
+    /// Tool results must be provided in the **same order** as the tool calls were received
+    /// from the model. The `tool_call_id` is accepted for API compatibility with other
+    /// providers (e.g., OpenAI) but is not used by xAI's gRPC API.
+    Tool {
+        /// The ID of the tool call this is responding to.
+        /// Note: Accepted for compatibility but not used by xAI's gRPC API.
+        tool_call_id: String,
+        /// The content/result of the tool execution.
+        content: String,
+    },
 }
 
 /// Content of a user message, which can be text-only or multimodal.
@@ -247,6 +263,52 @@ impl ChatRequest {
 
     pub fn assistant_message(mut self, content: impl Into<String>) -> Self {
         self.messages.push(Message::Assistant(content.into()));
+        self
+    }
+
+    /// Add a tool result message to the conversation.
+    ///
+    /// Tool result messages are sent after executing a client-side tool to provide
+    /// the result back to the model. This enables multi-turn tool calling workflows.
+    ///
+    /// # Important: Message Order
+    ///
+    /// **Tool results must be provided in the same order as the tool calls were received.**
+    /// The xAI gRPC API matches tool results to tool calls by message order, not by ID.
+    /// If the model made multiple tool calls, you must provide the results in the exact
+    /// same sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `tool_call_id` - The ID of the tool call this result corresponds to (from the model's tool_calls).
+    ///                    Note: Accepted for API compatibility but not used by xAI's gRPC API.
+    /// * `content` - The result content from the tool execution (typically JSON)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::ChatRequest;
+    ///
+    /// // Single tool call
+    /// let request = ChatRequest::new()
+    ///     .user_message("What's the weather?")
+    ///     .tool_result("call_123", r#"{"temperature": 72, "condition": "sunny"}"#);
+    ///
+    /// // Multiple tool calls - results must be in the same order as calls
+    /// let request = ChatRequest::new()
+    ///     .user_message("What's the weather in Tokyo and London?")
+    ///     .tool_result("call_1", r#"{"city": "Tokyo", "temp": 22}"#)      // First call result
+    ///     .tool_result("call_2", r#"{"city": "London", "temp": 15}"#);   // Second call result
+    /// ```
+    pub fn tool_result(
+        mut self,
+        tool_call_id: impl Into<String>,
+        content: impl Into<String>,
+    ) -> Self {
+        self.messages.push(Message::Tool {
+            tool_call_id: tool_call_id.into(),
+            content: content.into(),
+        });
         self
     }
 
@@ -832,5 +894,52 @@ mod tests {
 
         assert_eq!(request.max_turns(), Some(10));
         assert_eq!(request.include_options().len(), 2);
+    }
+
+    #[test]
+    fn test_tool_result_message() {
+        let request = ChatRequest::new()
+            .user_message("What's the weather?")
+            .tool_result("call_abc123", r#"{"temperature": 72, "condition": "sunny"}"#);
+
+        assert_eq!(request.messages().len(), 2);
+        match &request.messages()[1] {
+            Message::Tool { tool_call_id, content } => {
+                assert_eq!(tool_call_id, "call_abc123");
+                assert_eq!(content, r#"{"temperature": 72, "condition": "sunny"}"#);
+            }
+            _ => panic!("Expected tool result message"),
+        }
+    }
+
+    #[test]
+    fn test_multi_turn_tool_calling() {
+        let request = ChatRequest::new()
+            .user_message("Use the calculator to add 5 and 3")
+            .assistant_message("I'll use the calculator tool.")
+            .tool_result("call_1", r#"{"result": 8}"#)
+            .assistant_message("The sum of 5 and 3 is 8.");
+
+        assert_eq!(request.messages().len(), 4);
+
+        // Verify the sequence
+        assert!(matches!(request.messages()[0], Message::User(_)));
+        assert!(matches!(request.messages()[1], Message::Assistant(_)));
+        assert!(matches!(request.messages()[2], Message::Tool { .. }));
+        assert!(matches!(request.messages()[3], Message::Assistant(_)));
+    }
+
+    #[test]
+    fn test_tool_result_with_from_messages() {
+        let messages = vec![
+            Message::User(MessageContent::Text("Calculate 10 * 5".to_string())),
+            Message::Tool {
+                tool_call_id: "call_xyz".to_string(),
+                content: r#"{"result": 50}"#.to_string(),
+            },
+        ];
+
+        let request = ChatRequest::from_messages(messages);
+        assert_eq!(request.messages().len(), 2);
     }
 }

@@ -130,28 +130,41 @@ impl GrokClient {
     }
 
     fn message_to_proto(&self, message: &Message) -> proto::Message {
-        let (role, content_vec) = match message {
+        let (role, content_vec, name) = match message {
             Message::System(text) => (
                 proto::MessageRole::RoleSystem,
                 vec![proto::Content {
                     content: Some(proto::content::Content::Text(text.clone())),
                 }],
+                String::new(),
             ),
             Message::User(content) => {
                 let parts = self.message_content_to_proto(content);
-                (proto::MessageRole::RoleUser, parts)
+                (proto::MessageRole::RoleUser, parts, String::new())
             }
             Message::Assistant(text) => (
                 proto::MessageRole::RoleAssistant,
                 vec![proto::Content {
                     content: Some(proto::content::Content::Text(text.clone())),
                 }],
+                String::new(),
+            ),
+            // Tool result message - matches xAI Python SDK behavior
+            // The tool_call_id is accepted for API compatibility (e.g., with OpenAI)
+            // but not used in the gRPC protobuf as xAI's API matches results by message order
+            Message::Tool { tool_call_id: _, content } => (
+                proto::MessageRole::RoleTool,
+                vec![proto::Content {
+                    content: Some(proto::content::Content::Text(content.clone())),
+                }],
+                String::new(),  // Don't set name field, following Python SDK behavior
             ),
         };
 
         proto::Message {
             role: role as i32,
             content: content_vec,
+            name,
             ..Default::default()
         }
     }
