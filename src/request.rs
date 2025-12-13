@@ -281,7 +281,7 @@ impl ChatRequest {
     /// # Arguments
     ///
     /// * `tool_call_id` - The ID of the tool call this result corresponds to (from the model's tool_calls).
-    ///                    Note: Accepted for API compatibility but not used by xAI's gRPC API.
+    ///   Note: Accepted for API compatibility but not used by xAI's gRPC API.
     /// * `content` - The result content from the tool execution (typically JSON)
     ///
     /// # Example
@@ -900,11 +900,17 @@ mod tests {
     fn test_tool_result_message() {
         let request = ChatRequest::new()
             .user_message("What's the weather?")
-            .tool_result("call_abc123", r#"{"temperature": 72, "condition": "sunny"}"#);
+            .tool_result(
+                "call_abc123",
+                r#"{"temperature": 72, "condition": "sunny"}"#,
+            );
 
         assert_eq!(request.messages().len(), 2);
         match &request.messages()[1] {
-            Message::Tool { tool_call_id, content } => {
+            Message::Tool {
+                tool_call_id,
+                content,
+            } => {
                 assert_eq!(tool_call_id, "call_abc123");
                 assert_eq!(content, r#"{"temperature": 72, "condition": "sunny"}"#);
             }

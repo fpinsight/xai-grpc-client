@@ -152,12 +152,15 @@ impl GrokClient {
             // Tool result message - matches xAI Python SDK behavior
             // The tool_call_id is accepted for API compatibility (e.g., with OpenAI)
             // but not used in the gRPC protobuf as xAI's API matches results by message order
-            Message::Tool { tool_call_id: _, content } => (
+            Message::Tool {
+                tool_call_id: _,
+                content,
+            } => (
                 proto::MessageRole::RoleTool,
                 vec![proto::Content {
                     content: Some(proto::content::Content::Text(content.clone())),
                 }],
-                String::new(),  // Don't set name field, following Python SDK behavior
+                String::new(), // Don't set name field, following Python SDK behavior
             ),
         };
 
