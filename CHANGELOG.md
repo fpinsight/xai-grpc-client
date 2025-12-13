@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-12-13
+
+### Fixed
+- 🐛 **Tool calling workflow completion** (#18)
+  - Added support for tool result messages in multi-turn conversations
+  - Tool results can now be sent back to the model using `Message::Tool` variant
+  - New method: `ChatRequest::tool_result(tool_call_id, content)` for building tool calling workflows
+  - New method: `ChatRequest::tool_result_json(tool_call_id, serde_json::Value)` for JSON content
+  - Tool results are matched to tool calls by message order (following xAI's API design)
+  - Enables complete agent workflows with tool execution and result handling
+
+### Added
+- 📚 **New example**: `examples/tool_calling_with_results.rs`
+  - Demonstrates end-to-end tool calling workflow
+  - Shows how to execute tools and send results back to the model
+  - Documents message ordering requirements for tool results
+
+### Developer Notes
+- Tool result implementation matches xAI's Python SDK behavior
+- `tool_call_id` is accepted for API compatibility but not used in gRPC protobuf
+- Tool results must be provided in same order as tool calls were received
+
 ## [0.4.1] - 2025-11-30
 
 ### Fixed
@@ -321,7 +343,8 @@ This release achieves **100% (19/19)** API coverage - complete implementation of
 - API keys stored using `secrecy::Secret` to prevent accidental exposure
 - TLS support for secure gRPC connections
 
-[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.1...HEAD
+[unreleased]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/fpinsight/xai-grpc-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/fpinsight/xai-grpc-client/compare/v0.2.1...v0.3.0
