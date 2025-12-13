@@ -312,6 +312,42 @@ impl ChatRequest {
         self
     }
 
+    /// Add a tool result message with JSON content to the conversation.
+    ///
+    /// This is a convenience method that accepts a `serde_json::Value` and automatically
+    /// converts it to a string. It ensures the content is valid JSON.
+    ///
+    /// # Important: Message Order
+    ///
+    /// **Tool results must be provided in the same order as the tool calls were received.**
+    /// See [`tool_result`](Self::tool_result) for more details on message ordering.
+    ///
+    /// # Arguments
+    ///
+    /// * `tool_call_id` - The ID of the tool call this result corresponds to
+    /// * `content` - The result content as a `serde_json::Value`
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use xai_grpc_client::ChatRequest;
+    /// use serde_json::json;
+    ///
+    /// let request = ChatRequest::new()
+    ///     .user_message("What's the weather?")
+    ///     .tool_result_json("call_123", &json!({
+    ///         "temperature": 72,
+    ///         "condition": "sunny"
+    ///     }));
+    /// ```
+    pub fn tool_result_json(
+        self,
+        tool_call_id: impl Into<String>,
+        content: &serde_json::Value,
+    ) -> Self {
+        self.tool_result(tool_call_id, content.to_string())
+    }
+
     pub fn user_multimodal(mut self, parts: Vec<ContentPart>) -> Self {
         self.messages
             .push(Message::User(MessageContent::MultiModal(parts)));

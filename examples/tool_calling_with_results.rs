@@ -48,6 +48,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Step 3: Execute the tool (simulated)
+    // NOTE: In production, this is where you'd dispatch to actual tool implementations
+    // (e.g., call a weather API, database query, etc.)
     println!("\n=== Step 2: Execute tool ===\n");
     let tool_result = json!({
         "temperature": 22,
@@ -62,9 +64,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // IMPORTANT: Tool results must be provided in the same order as tool calls were received.
     // xAI's gRPC API matches results to calls by message order, not by ID.
+    // NOTE: This example handles a single tool call scenario. For multiple tool calls,
+    // iterate through all calls and provide results in the same order.
     let follow_up_request = ChatRequest::new()
         .user_message("What's the weather in Tokyo?")
         .assistant_message(&response.content) // Include the assistant's tool call message
+        // Safe: we verified tool_calls is non-empty at line 38
         .tool_result(&response.tool_calls[0].id, tool_result.to_string())
         .with_model("grok-2-1212");
 
