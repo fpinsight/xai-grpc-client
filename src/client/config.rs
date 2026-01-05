@@ -444,16 +444,11 @@ impl GrokClient {
         };
 
         // Apply timeout to test connection
-        let timeout_duration = self.config.timeout;
-        let response = tokio::time::timeout(timeout_duration, self.inner.get_completion(request))
-            .await
-            .map_err(|_| {
-                GrokError::Status(tonic::Status::deadline_exceeded(format!(
-                    "Request timeout after {:.1}s",
-                    timeout_duration.as_secs_f64()
-                )))
-            })?
-            .map_err(|e: tonic::Status| GrokError::from(e))?;
+        let response = super::operations::with_timeout(
+            self.config.timeout,
+            self.inner.get_completion(request),
+        )
+        .await?;
         let completion = response.into_inner();
 
         // Extract text from first output

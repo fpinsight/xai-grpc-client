@@ -11,7 +11,7 @@ use tokio_stream::{Stream, StreamExt};
 /// Helper function to wrap an async operation with timeout.
 ///
 /// Returns a descriptive timeout error if the operation exceeds the specified timeout.
-async fn with_timeout<F, T>(timeout_duration: Duration, operation: F) -> Result<T>
+pub(crate) async fn with_timeout<F, T>(timeout_duration: Duration, operation: F) -> Result<T>
 where
     F: Future<Output = std::result::Result<T, tonic::Status>>,
 {
@@ -130,6 +130,17 @@ impl GrokClient {
 
     /// Wait for deferred completion to finish (blocking with polling)
     /// Polls every `poll_interval` until complete or timeout
+    ///
+    /// # Timeout Behavior
+    ///
+    /// This method has two timeout parameters:
+    /// - `timeout`: Maximum duration for the entire polling operation
+    /// - Each `poll_deferred` call also respects `self.config.timeout` (default 60s)
+    ///
+    /// If a single poll takes the full `self.config.timeout`, the overall
+    /// operation may exceed `poll_interval * expected_polls`. When setting
+    /// timeouts, account for both the polling frequency and the per-request
+    /// timeout to avoid unexpected behavior.
     pub async fn wait_for_deferred(
         &mut self,
         request_id: String,
