@@ -55,11 +55,20 @@ impl GrokClient {
         .await?
         .into_inner();
 
-        let stream = response.map(|result| {
-            result
-                .map_err(Into::into)
-                .and_then(Self::proto_chunk_to_chunk)
-        });
+        let timeout_duration = self.config.timeout;
+        let stream = response
+            .timeout(timeout_duration)
+            .map(move |result| match result {
+                Ok(chunk_result) => chunk_result
+                    .map_err(Into::into)
+                    .and_then(Self::proto_chunk_to_chunk),
+                Err(_) => Err(GrokError::Status(tonic::Status::deadline_exceeded(
+                    format!(
+                        "Stream chunk timeout after {:.1}s",
+                        timeout_duration.as_secs_f64()
+                    ),
+                ))),
+            });
 
         Ok(Box::pin(stream))
     }
@@ -572,7 +581,18 @@ impl GrokClient {
         .await?
         .into_inner();
 
-        let stream = response.map(|result| result.map_err(Into::into).map(Into::into));
+        let timeout_duration = self.config.timeout;
+        let stream = response
+            .timeout(timeout_duration)
+            .map(move |result| match result {
+                Ok(sample_result) => sample_result.map_err(Into::into).map(Into::into),
+                Err(_) => Err(GrokError::Status(tonic::Status::deadline_exceeded(
+                    format!(
+                        "Stream chunk timeout after {:.1}s",
+                        timeout_duration.as_secs_f64()
+                    ),
+                ))),
+            });
 
         Ok(Box::pin(stream))
     }
