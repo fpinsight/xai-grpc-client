@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-01-05
+
+### Fixed
+- 🐛 **Timeout error message display for sub-second durations** (#23)
+  - Fixed timeout error messages to display sub-second durations correctly
+  - Changed from `.as_secs()` to `.as_secs_f64()` with `{:.1}s` formatting
+  - Now displays "0.5s" instead of "0s" for 500ms timeouts
+  - Improves clarity for users debugging timeout issues
+
+- 🐛 **Per-chunk timeout protection for streaming operations** (#23)
+  - Extended timeout protection to individual chunk delivery in streaming
+  - Previously only protected stream establishment, not chunk delivery
+  - Added timeout wrapper to both `stream_chat` and `sample_text_streaming`
+  - Prevents indefinite hangs when server becomes unresponsive during streaming
+  - Critical fix for TUI applications that could freeze waiting for chunks
+
+### Changed
+- ♻️ **Refactored timeout logic to reduce code duplication** (#23)
+  - Made `with_timeout` helper function reusable across modules
+  - Eliminated duplicated timeout logic in `test_connection` method
+  - Single source of truth for timeout behavior
+  - Easier maintenance for future timeout-related changes
+
+### Documentation
+- 📚 **Added layered timeout documentation to `wait_for_deferred`** (#23)
+  - Clarifies interaction between overall polling timeout and per-request timeout
+  - Helps users set appropriate timeout values
+  - Prevents confusion about timeout behavior in polling scenarios
+
+### Developer Notes
+- All changes address CodeRabbit review feedback on PR #23
+- Comprehensive timeout protection now covers all gRPC operations and streaming
+- Timeout error messages are now consistent and precise across the library
+
 ## [0.4.2] - 2025-12-13
 
 ### Fixed
