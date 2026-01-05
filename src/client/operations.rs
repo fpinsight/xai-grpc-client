@@ -5,15 +5,38 @@ use crate::{
     request::ChatRequest,
     response::{ChatChunk, ChatResponse},
 };
-use std::pin::Pin;
+use std::{future::Future, pin::Pin, time::Duration};
 use tokio_stream::{Stream, StreamExt};
+
+/// Helper function to wrap an async operation with timeout.
+///
+/// Returns a descriptive timeout error if the operation exceeds the specified timeout.
+pub(crate) async fn with_timeout<F, T>(timeout_duration: Duration, operation: F) -> Result<T>
+where
+    F: Future<Output = std::result::Result<T, tonic::Status>>,
+{
+    tokio::time::timeout(timeout_duration, operation)
+        .await
+        .map_err(|_| {
+            GrokError::Status(tonic::Status::deadline_exceeded(format!(
+                "Request timeout after {:.1}s",
+                timeout_duration.as_secs_f64()
+            )))
+        })?
+        .map_err(Into::into)
+}
 
 impl GrokClient {
     /// Blocking completion (for simple queries)
     pub async fn complete_chat(&mut self, request: ChatRequest) -> Result<ChatResponse> {
         let proto_request = self.to_proto_request(&request)?;
 
-        let response = self.inner.get_completion(proto_request).await?.into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.inner.get_completion(proto_request),
+        )
+        .await?
+        .into_inner();
 
         self.proto_to_response(response)
     }
@@ -25,17 +48,27 @@ impl GrokClient {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<ChatChunk>> + Send>>> {
         let proto_request = self.to_proto_request(&request)?;
 
-        let response = self
-            .inner
-            .get_completion_chunk(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.inner.get_completion_chunk(proto_request),
+        )
+        .await?
+        .into_inner();
 
-        let stream = response.map(|result| {
-            result
-                .map_err(Into::into)
-                .and_then(Self::proto_chunk_to_chunk)
-        });
+        let timeout_duration = self.config.timeout;
+        let stream = response
+            .timeout(timeout_duration)
+            .map(move |result| match result {
+                Ok(chunk_result) => chunk_result
+                    .map_err(Into::into)
+                    .and_then(Self::proto_chunk_to_chunk),
+                Err(_) => Err(GrokError::Status(tonic::Status::deadline_exceeded(
+                    format!(
+                        "Stream chunk timeout after {:.1}s",
+                        timeout_duration.as_secs_f64()
+                    ),
+                ))),
+            });
 
         Ok(Box::pin(stream))
     }
@@ -45,11 +78,12 @@ impl GrokClient {
     pub async fn start_deferred(&mut self, request: ChatRequest) -> Result<String> {
         let proto_request = self.to_proto_request(&request)?;
 
-        let response = self
-            .inner
-            .start_deferred_completion(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.inner.start_deferred_completion(proto_request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.request_id)
     }
@@ -59,11 +93,12 @@ impl GrokClient {
     pub async fn poll_deferred(&mut self, request_id: String) -> Result<Option<ChatResponse>> {
         let proto_request = proto::GetDeferredRequest { request_id };
 
-        let response = self
-            .inner
-            .get_deferred_completion(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.inner.get_deferred_completion(proto_request),
+        )
+        .await?
+        .into_inner();
 
         // Check status
         let status = proto::DeferredStatus::try_from(response.status)
@@ -95,6 +130,17 @@ impl GrokClient {
 
     /// Wait for deferred completion to finish (blocking with polling)
     /// Polls every `poll_interval` until complete or timeout
+    ///
+    /// # Timeout Behavior
+    ///
+    /// This method has two timeout parameters:
+    /// - `timeout`: Maximum duration for the entire polling operation
+    /// - Each `poll_deferred` call also respects `self.config.timeout` (default 60s)
+    ///
+    /// If a single poll takes the full `self.config.timeout`, the overall
+    /// operation may exceed `poll_interval * expected_polls`. When setting
+    /// timeouts, account for both the polling frequency and the per-request
+    /// timeout to avoid unexpected behavior.
     pub async fn wait_for_deferred(
         &mut self,
         request_id: String,
@@ -124,11 +170,12 @@ impl GrokClient {
     pub async fn get_stored_completion(&mut self, response_id: String) -> Result<ChatResponse> {
         let proto_request = proto::GetStoredCompletionRequest { response_id };
 
-        let response = self
-            .inner
-            .get_stored_completion(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.inner.get_stored_completion(proto_request),
+        )
+        .await?
+        .into_inner();
 
         self.proto_to_response(response)
     }
@@ -137,7 +184,11 @@ impl GrokClient {
     pub async fn delete_stored_completion(&mut self, response_id: String) -> Result<()> {
         let proto_request = proto::DeleteStoredCompletionRequest { response_id };
 
-        self.inner.delete_stored_completion(proto_request).await?;
+        with_timeout(
+            self.config.timeout,
+            self.inner.delete_stored_completion(proto_request),
+        )
+        .await?;
 
         Ok(())
     }
@@ -162,11 +213,12 @@ impl GrokClient {
     /// }
     /// ```
     pub async fn list_models(&mut self) -> Result<Vec<crate::models::LanguageModel>> {
-        let response = self
-            .models_client
-            .list_language_models(())
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.models_client.list_language_models(()),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.models.into_iter().map(Into::into).collect())
     }
@@ -196,11 +248,12 @@ impl GrokClient {
     ) -> Result<crate::models::LanguageModel> {
         let request = proto::GetModelRequest { name: name.into() };
 
-        let response = self
-            .models_client
-            .get_language_model(request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.models_client.get_language_model(request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.into())
     }
@@ -224,11 +277,12 @@ impl GrokClient {
     /// }
     /// ```
     pub async fn list_embedding_models(&mut self) -> Result<Vec<crate::models::EmbeddingModel>> {
-        let response = self
-            .models_client
-            .list_embedding_models(())
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.models_client.list_embedding_models(()),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.models.into_iter().map(Into::into).collect())
     }
@@ -257,11 +311,12 @@ impl GrokClient {
     ) -> Result<crate::models::EmbeddingModel> {
         let request = proto::GetModelRequest { name: name.into() };
 
-        let response = self
-            .models_client
-            .get_embedding_model(request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.models_client.get_embedding_model(request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.into())
     }
@@ -288,11 +343,12 @@ impl GrokClient {
     pub async fn list_image_generation_models(
         &mut self,
     ) -> Result<Vec<crate::models::ImageGenerationModel>> {
-        let response = self
-            .models_client
-            .list_image_generation_models(())
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.models_client.list_image_generation_models(()),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.models.into_iter().map(Into::into).collect())
     }
@@ -320,11 +376,12 @@ impl GrokClient {
     ) -> Result<crate::models::ImageGenerationModel> {
         let request = proto::GetModelRequest { name: name.into() };
 
-        let response = self
-            .models_client
-            .get_image_generation_model(request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.models_client.get_image_generation_model(request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.into())
     }
@@ -359,11 +416,12 @@ impl GrokClient {
     ) -> Result<crate::embedding::EmbedResponse> {
         let proto_request = self.embed_request_to_proto(&request);
 
-        let response = self
-            .embedder_client
-            .embed(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.embedder_client.embed(proto_request),
+        )
+        .await?
+        .into_inner();
 
         Self::proto_to_embed_response(response)
     }
@@ -407,11 +465,12 @@ impl GrokClient {
             user: request.user.unwrap_or_default(),
         };
 
-        let response = self
-            .tokenize_client
-            .tokenize_text(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.tokenize_client.tokenize_text(proto_request),
+        )
+        .await?
+        .into_inner();
 
         let tokens = response
             .tokens
@@ -464,7 +523,9 @@ impl GrokClient {
     /// }
     /// ```
     pub async fn get_api_key_info(&mut self) -> Result<crate::api_key::ApiKeyInfo> {
-        let response = self.auth_client.get_api_key_info(()).await?.into_inner();
+        let response = with_timeout(self.config.timeout, self.auth_client.get_api_key_info(()))
+            .await?
+            .into_inner();
 
         Ok(response.into())
     }
@@ -493,11 +554,12 @@ impl GrokClient {
             user: request.user.unwrap_or_default(),
         };
 
-        let response = self
-            .sample_client
-            .sample_text(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.sample_client.sample_text(proto_request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.into())
     }
@@ -523,13 +585,25 @@ impl GrokClient {
             user: request.user.unwrap_or_default(),
         };
 
-        let response = self
-            .sample_client
-            .sample_text_streaming(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.sample_client.sample_text_streaming(proto_request),
+        )
+        .await?
+        .into_inner();
 
-        let stream = response.map(|result| result.map_err(Into::into).map(Into::into));
+        let timeout_duration = self.config.timeout;
+        let stream = response
+            .timeout(timeout_duration)
+            .map(move |result| match result {
+                Ok(sample_result) => sample_result.map_err(Into::into).map(Into::into),
+                Err(_) => Err(GrokError::Status(tonic::Status::deadline_exceeded(
+                    format!(
+                        "Stream chunk timeout after {:.1}s",
+                        timeout_duration.as_secs_f64()
+                    ),
+                ))),
+            });
 
         Ok(Box::pin(stream))
     }
@@ -554,11 +628,12 @@ impl GrokClient {
             },
         };
 
-        let response = self
-            .image_client
-            .generate_image(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.image_client.generate_image(proto_request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.into())
     }
@@ -585,11 +660,12 @@ impl GrokClient {
             instructions: request.instructions,
         };
 
-        let response = self
-            .documents_client
-            .search(proto_request)
-            .await?
-            .into_inner();
+        let response = with_timeout(
+            self.config.timeout,
+            self.documents_client.search(proto_request),
+        )
+        .await?
+        .into_inner();
 
         Ok(response.into())
     }

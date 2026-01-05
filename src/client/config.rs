@@ -443,7 +443,12 @@ impl GrokClient {
             ..Default::default()
         };
 
-        let response = self.inner.get_completion(request).await?;
+        // Apply timeout to test connection
+        let response = super::operations::with_timeout(
+            self.config.timeout,
+            self.inner.get_completion(request),
+        )
+        .await?;
         let completion = response.into_inner();
 
         // Extract text from first output
