@@ -443,7 +443,17 @@ impl GrokClient {
             ..Default::default()
         };
 
-        let response = self.inner.get_completion(request).await?;
+        // Apply timeout to test connection
+        let timeout_duration = self.config.timeout;
+        let response = tokio::time::timeout(timeout_duration, self.inner.get_completion(request))
+            .await
+            .map_err(|_| {
+                GrokError::Status(tonic::Status::deadline_exceeded(format!(
+                    "Request timeout after {}s",
+                    timeout_duration.as_secs()
+                )))
+            })?
+            .map_err(|e: tonic::Status| GrokError::from(e))?;
         let completion = response.into_inner();
 
         // Extract text from first output
