@@ -19,8 +19,8 @@ where
         .await
         .map_err(|_| {
             GrokError::Status(tonic::Status::deadline_exceeded(format!(
-                "Request timeout after {}s",
-                timeout_duration.as_secs()
+                "Request timeout after {:.1}s",
+                timeout_duration.as_secs_f64()
             )))
         })?
         .map_err(Into::into)
